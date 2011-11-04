@@ -1260,7 +1260,7 @@ class TestCookies(object):
             assert cookies[key].max_age is None
 
             # Spot check cookie deletion
-            keys = cookies.keys()
+            keys = [key for key in cookies.keys()]
             for key in keys:
                 del cookies[key]
                 assert key not in cookies
@@ -2153,7 +2153,7 @@ test_encode_extension_av = simple_test(encode_extension_av,
     {
         None: '',
         '': '',
-        'foo': b'foo',
+        'foo': 'foo',
         # stuff this lets through that cookie-value does not
         ' ': ' ',
         '"': '"',

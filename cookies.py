@@ -6,6 +6,8 @@ import logging
 from sys import version_info as _VERSION_INFO
 if _VERSION_INFO.major >= 3:
     from urllib.parse import quote, unquote
+    basestring = str
+    long = int
 else:
     from urllib import quote, unquote
 
@@ -362,6 +364,9 @@ def valid_value(value):
     # Verify it encodes without loss...
     encoded = encode_cookie_value(value)
     decoded = parse_string(encoded)
+    if isinstance(value, bytes):
+        if decoded.encode('utf-8') == value:
+            return True
     if not decoded == value:
         return False
     return True
@@ -427,7 +432,8 @@ def encode_cookie_value(data):
     """
     if not data:
         return ''
-    data = data.encode('utf-8')
+    if not isinstance(data, bytes):
+        data = data.encode('utf-8')
     # Escape only the cookie-value illegal characters -
     # see test_encoding_assumptions for a 'proof' of this safe value
     return quote(data, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
@@ -441,7 +447,8 @@ def encode_extension_av(data):
     """
     if not data:
         return ''
-    data = data.encode('utf-8')
+    if not isinstance(data, bytes):
+        data = data.encode('utf-8')
     # Encode only the extension-av illegal characters -
     # see test_encoding_assumptions for a 'proof' of this safe value
     return quote(data, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
