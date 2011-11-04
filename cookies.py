@@ -11,7 +11,7 @@ else:
 
 
 def report_invalid_cookie(data):
-    "Uniform way for this file to log a bad cookie"
+    "Uniform way for this file to log a bad cookie when exception suppressed"
     logging.error("Invalid Cookie: %s", repr(data))
 
 
