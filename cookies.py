@@ -5,11 +5,24 @@ import datetime
 import logging
 from sys import version_info as _VERSION_INFO
 if _VERSION_INFO.major >= 3:
-    from urllib.parse import quote, unquote
+    from urllib.parse import quote as _default_quote, \
+                             unquote as _default_unquote
     basestring = str
     long = int
 else:
-    from urllib import quote, unquote
+    from urllib import quote as _default_quote, \
+                       unquote as _default_unquote
+
+# see test_encoding_assumptions for how these magical safe= parms were figured
+# out. the differences are because of what cookie-octet may contain
+# vs the more liberal spec for extension-av
+default_cookie_quote = lambda item: _default_quote(
+                             item, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
+
+default_extension_quote = lambda item: _default_quote(
+                             item, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
+
+default_unquote = _default_unquote
 
 
 def report_invalid_cookie(data):
@@ -266,7 +279,7 @@ def strip_spaces_and_quotes(value):
     return value
 
 
-def parse_string(data):
+def parse_string(data, unquote=default_unquote):
     """Decode URL-encoded strings to UTF-8 containing the escaped chars.
     """
     if data is None:
@@ -339,10 +352,10 @@ def parse_path(value):
     return value
 
 
-def parse_value(value, allow_spaces=True):
+def parse_value(value, allow_spaces=True, unquote=default_unquote):
     "Process a cookie value"
     value = strip_spaces_and_quotes(value)
-    value = parse_string(value)
+    value = parse_string(value, unquote=unquote)
     if not allow_spaces:
         assert ' ' not in value
     return value
@@ -359,11 +372,11 @@ def valid_name(name):
     return True
 
 
-def valid_value(value):
+def valid_value(value, quote=default_cookie_quote, unquote=default_unquote):
     "Validate a cookie value string."
     # Verify it encodes without loss...
-    encoded = encode_cookie_value(value)
-    decoded = parse_string(encoded)
+    encoded = encode_cookie_value(value, quote=quote)
+    decoded = parse_string(encoded, unquote=unquote)
     if isinstance(value, bytes):
         if decoded.encode('utf-8') == value:
             return True
@@ -422,24 +435,23 @@ def valid_max_age(number):
     return False
 
 
-def encode_cookie_value(data):
+def encode_cookie_value(data, quote=default_cookie_quote):
     """URL-encode and serialize strings to make them safe for a cookie value.
 
-    This uses urllib quoting, as used in many other cookie implementations and
-    in other Python code, instead of an ad hoc escaping mechanism which
-    includes backslashes (these also being illegal chars in RFC 6265).
+    By default this uses urllib quoting, as used in many other cookie
+    implementations and in other Python code, instead of an ad hoc escaping
+    mechanism which includes backslashes (these also being illegal chars in RFC
+    6265).
     Reversible with parse_string().
     """
     if not data:
         return ''
     if not isinstance(data, bytes):
         data = data.encode('utf-8')
-    # Escape only the cookie-value illegal characters -
-    # see test_encoding_assumptions for a 'proof' of this safe value
-    return quote(data, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
+    return quote(data)
 
 
-def encode_extension_av(data):
+def encode_extension_av(data, quote=default_extension_quote):
     """URL-encode strings to make them safe for an extension-av
     (extension attribute value): <any CHAR except CTLs or ";">
 
@@ -449,9 +461,7 @@ def encode_extension_av(data):
         return ''
     if not isinstance(data, bytes):
         data = data.encode('utf-8')
-    # Encode only the extension-av illegal characters -
-    # see test_encoding_assumptions for a 'proof' of this safe value
-    return quote(data, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
+    return quote(data)
 
 
 def render_date(date):
@@ -626,6 +636,18 @@ class Cookie(object):
             return True if validator(value) else False
         return True
 
+    def quote(self, data):
+        """Quote function used by members of this class.
+        Override/subclass to use a different quote function.
+        """
+        return default_cookie_quote(data)
+
+    def unquote(self, data):
+        """Unquote function used by members of this class.
+        Override/subclass to use a different quote function.
+        """
+        return default_unquote(data)
+
     def __setattr__(self, name, value):
         """Attributes mentioned in attribute_names get validated using
         functions in attribute_validators, raising an exception on failure.
@@ -772,7 +794,7 @@ class Cookie(object):
     # validator doesn't raise a different exception prior)
     attribute_validators = {
             'name':     valid_name,
-            'value':    valid_value,
+            'value':    lambda item: valid_value,
             'expires':  valid_date,
             'domain':   valid_domain,
             'path':     valid_path,
