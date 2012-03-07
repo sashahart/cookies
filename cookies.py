@@ -610,12 +610,16 @@ class Cookie(object):
         cookie_dict = parse_one_response(line,
                 ignore_bad_cookies=ignore_bad_cookies,
                 ignore_bad_attributes=ignore_bad_attributes)
+        if not cookie_dict:
+            return None
         return cls.from_dict(cookie_dict,
                 ignore_bad_attributes=ignore_bad_attributes)
 
     @classmethod
     def from_dict(cls, cookie_dict, ignore_bad_attributes=True):
         "Construct a Cookie object from a dict of strings to parse."
+        if not cookie_dict:
+            return None
         for key, value in cookie_dict.items():
             parser = cls.attribute_parsers.get(key)
             if parser:
