@@ -1,1 +1,1 @@
-guide.rst
+docs/guide.rst
