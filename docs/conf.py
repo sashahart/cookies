@@ -239,3 +239,6 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+# Make ReadTheDocs use the default sphinx theme
+html_style = None
