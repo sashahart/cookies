@@ -629,6 +629,11 @@ class Cookie(object):
         cookie = Cookie(**cookie_dict)
         return cookie
 
+    def to_dict(self):
+        this_dict = {'name': self.name, 'value': self.value}
+        this_dict.update(self.attributes())
+        return this_dict
+
     def validate(self, name, value):
         "Validate a cookie attribute with an appropriate validator."
         validator = self.attribute_validators.get(name, None)
