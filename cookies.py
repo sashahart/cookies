@@ -635,23 +635,26 @@ class Cookie(object):
         return this_dict
 
     def validate(self, name, value):
-        "Validate a cookie attribute with an appropriate validator."
+        """Validate a cookie attribute with an appropriate validator.
+
+        Called automatically when an attribute value is set.
+        """
         validator = self.attribute_validators.get(name, None)
         if validator:
             return True if validator(value) else False
         return True
 
-    def quote(self, data):
-        """Quote function used by members of this class.
-        Override/subclass to use a different quote function.
-        """
-        return default_cookie_quote(data)
+#   def quote(self, data):
+#       """Quote function used by members of this class.
+#       Override/subclass to use a different quote function.
+#       """
+#       return default_cookie_quote(data)
 
-    def unquote(self, data):
-        """Unquote function used by members of this class.
-        Override/subclass to use a different quote function.
-        """
-        return default_unquote(data)
+#   def unquote(self, data):
+#       """Unquote function used by members of this class.
+#       Override/subclass to use a different quote function.
+#       """
+#       return default_unquote(data)
 
     def __setattr__(self, name, value):
         """Attributes mentioned in attribute_names get validated using
@@ -680,6 +683,9 @@ class Cookie(object):
 
     def attributes(self):
         """Export this cookie's attributes as a dict of encoded values.
+
+        This is an important part of the code for rendering attributes, e.g.
+        render_response().
         """
         dictionary = {}
         # Only look for attributes registered in attribute_names.
