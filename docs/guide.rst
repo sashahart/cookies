@@ -1,8 +1,8 @@
-A guide to the cookies.py API
-=============================
+API Guide
+=========
 
-This document shows the basics of how to use cookies.py to parse, modify
-and render cookies.
+Okay, so this is supposed to be a very nice module for parsing, manipulating
+and rendering HTTP cookie data. So how do you use this thing?
 
 Two interfaces are exposed: a collection class named Cookies, and a class
 named Cookie to represent each particular name, value and set of
@@ -234,7 +234,7 @@ CRLF line endings.
 Each individual cookie can be rendered either in the format for an HTTP
 request, or the format for an HTTP response. Attribute values can be
 manipulated in natural ways and the rendered output changes appropriately; but
-rendered request headers don't include attributes (as they shouldn't).
+rendered request headers don't include attributes (as they shouldn't)::
 
     >>> from datetime import datetime
     >>> cookies = Cookies(a='foo', b='bar')
@@ -281,8 +281,8 @@ comparing all their individual cookies.
     False
 
 
-Extension
----------
+Extension Mechanisms
+--------------------
 
 Many aspects of the Cookie class can be customized to get different behavior.
 For example, new attributes can be supported or existing attributes can be
