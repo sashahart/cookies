@@ -12,7 +12,7 @@ tries to render strictly according to RFC 6265. It is designed to be customized
 and extended and allow reuse of parts of the implementation without undue
 difficulty. It is very well-documented, with chapter and verse from RFCs, and
 has a more comprehensive test suite than Cookie.py. It is compatible with
-Python 2.7, Python 3.x and PyPy.
+Python 2.6, 2.7, 3.1, 3.2 and PyPy (Python 2.7).
 
 Things this is not meant to do
 ------------------------------
