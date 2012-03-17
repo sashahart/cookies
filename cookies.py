@@ -4,7 +4,7 @@ import re
 import datetime
 import logging
 from sys import version_info as _VERSION_INFO
-if _VERSION_INFO.major >= 3:
+if _VERSION_INFO >= (3, 0, 0):
     from urllib.parse import quote as _default_quote, \
                              unquote as _default_unquote
     basestring = str
@@ -12,6 +12,14 @@ if _VERSION_INFO.major >= 3:
 else:
     from urllib import quote as _default_quote, \
                        unquote as _default_unquote
+
+def total_seconds(td):
+    """Wrapper to work around lack of .total_seconds() method in Python 3.1.
+    """
+    try:
+        return td.total_seconds()
+    except AttributeError:
+        return td.days * 3600 * 24 + td.seconds + td.microseconds / 100000.0
 
 # see test_encoding_assumptions for how these magical safe= parms were figured
 # out. the differences are because of what cookie-octet may contain
@@ -392,7 +400,7 @@ def valid_date(date):
         return False
     # Relevant RFCs define UTC as 'close enough' to GMT, and the maximum
     # difference between UTC and GMT is often stated to be less than a second.
-    if date.tzinfo is None or date.utcoffset().total_seconds() < 1.1:
+    if date.tzinfo is None or total_seconds(date.utcoffset()) < 1.1:
         return True
     return False
 

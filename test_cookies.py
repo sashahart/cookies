@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import re
 import sys
 import logging
-if sys.version_info.major == 2:
+if sys.version_info < (3, 0, 0):
     from urllib import quote, unquote
 else:
     from urllib.parse import quote, unquote
