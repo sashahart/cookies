@@ -2048,13 +2048,15 @@ def test_encoding_assumptions(check_unicode=False):
     # in Python 2 it shouldn't be an issue)
     cookie_value_safe1 = set(chr(i) for i in range(0, 256) \
                             if cookie_value_re.match(chr(i)))
-    cookie_value_safe2 = set(unichr(i) for i in range(0, 2560) \
+    cookie_value_safe2 = set(unichr(i) for i in range(0, 256) \
                             if cookie_value_re.match(unichr(i)))
     # These two are NOT the same on Python3
     assert cookie_value_safe1 == cookie_value_safe2
     # Now which of these are quoted by urllib.quote?
-    safe_but_quoted = set(c for c in cookie_value_safe1 \
-                          if quote(c, safe="") != c)
+    # caveat: Python 2.6 crashes if chr(127) is passed to quote and safe="",
+    # so explicitly set it to b"" to avoid the issue
+    safe_but_quoted = set(c for c in cookie_value_safe1
+                          if quote(c, safe=b"") != c)
     # Produce a set of characters to give to urllib.quote for the safe parm.
     dont_quote = "".join(sorted(safe_but_quoted))
     # Make sure it works (and that it works because of what we passed)
