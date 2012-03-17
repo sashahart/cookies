@@ -25,7 +25,7 @@ setup(
     author_email="s@sashahart.net",
     url="https://github.com/sashahart/cookies",
     py_modules=['cookies', 'test_cookies'],
-    description="",
+    description="Friendlier RFC 6265-compliant cookie parser/renderer",
     long_description=open('README').read(),
     classifiers=[
         "Development Status :: 4 - Beta",
