@@ -23,13 +23,13 @@ SOFTWARE.
 import re
 import datetime
 import logging
-from sys import version_info as _VERSION_INFO
-if _VERSION_INFO >= (3, 0, 0):
+import sys
+if sys.version_info >= (3, 0, 0):  # pragma: no cover
     from urllib.parse import quote as _default_quote, \
                              unquote as _default_unquote
     basestring = str
     long = int
-else:
+else:  # pragma: no cover
     from urllib import quote as _default_quote, \
                        unquote as _default_unquote
 
@@ -676,18 +676,6 @@ class Cookie(object):
             return True if validator(value) else False
         return True
 
-#   def quote(self, data):
-#       """Quote function used by members of this class.
-#       Override/subclass to use a different quote function.
-#       """
-#       return default_cookie_quote(data)
-
-#   def unquote(self, data):
-#       """Unquote function used by members of this class.
-#       Override/subclass to use a different quote function.
-#       """
-#       return default_unquote(data)
-
     def __setattr__(self, name, value):
         """Attributes mentioned in attribute_names get validated using
         functions in attribute_validators, raising an exception on failure.
@@ -698,7 +686,6 @@ class Cookie(object):
             # raise error so users of __setattr__ can learn.
             if value is not None:
                 if not self.validate(name, value):
-                    logging.error("validation failed %s", name)
                     raise InvalidCookieAttributeError(name, value,
                             "did not validate with " +
                             repr(self.attribute_validators.get(name)))
