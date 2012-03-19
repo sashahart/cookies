@@ -22,7 +22,7 @@ from cookies import (
         parse_string, parse_value, parse_domain, parse_path,
         encode_cookie_value, encode_extension_av,
         valid_value, valid_date, valid_domain, valid_path,
-        strip_spaces_and_quotes,
+        strip_spaces_and_quotes, _total_seconds,
         )
 
 
@@ -2221,3 +2221,32 @@ def test_many_pairs():
             assert cookies[key].value == str(j * 10)
             assert cookies[key].render_request(prefix='') == \
                     "a%d=%d" % (j, j * 10)
+def test_total_seconds():
+    """This wrapper probably doesn't need testing so much, and it's not
+    entirely trivial to fully exercise, but the coverage is nice to have
+    """
+    def basic_sanity(td_type):
+        assert _total_seconds(td_type(seconds=1)) == 1
+        assert _total_seconds(td_type(seconds=1, minutes=1)) == 1 + 60
+        assert _total_seconds(td_type(seconds=1, minutes=1, hours=1)) == \
+                1 + 60 + 60 * 60
+
+    basic_sanity(timedelta)
+
+    class FakeTimeDelta(object):
+        def __init__(self, days=0, hours=0, minutes=0, seconds=0,
+                     microseconds=0):
+            self.days = days
+            self.seconds = seconds + minutes * 60 + hours * 60 * 60
+            self.microseconds = microseconds
+
+    assert not hasattr(FakeTimeDelta, "total_seconds")
+    basic_sanity(FakeTimeDelta)
+
+    FakeTimeDelta.total_seconds = lambda: None.missing_attribute
+    try:
+        _total_seconds(None)
+    except AttributeError as e:
+        assert 'total_seconds' not in str(e)
+
+
