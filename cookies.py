@@ -824,7 +824,7 @@ class Cookie(object):
     # validator doesn't raise a different exception prior)
     attribute_validators = {
             'name':     valid_name,
-            'value':    lambda item: valid_value,
+            'value':    valid_value,
             'expires':  valid_date,
             'domain':   valid_domain,
             'path':     valid_path,
