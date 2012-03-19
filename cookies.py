@@ -683,19 +683,74 @@ class Cookie(object):
     preferred date format in RFC 1123.
     """
     def __init__(self, name, value, **kwargs):
-        assert name, "a name must be specified when creating a Cookie"
+        # If we don't have or can't set a name value, we don't want to return
+        # junk, so we must break control flow. And we don't want to use
+        # InvalidCookieAttributeError, because users may want to catch that to
+        # suppress all complaining about funky attributes.
         try:
             self.name = name
-            self.value = value
-        except (InvalidCookieAttributeError):
-            raise InvalidCookieError("Invalid name or value: %s = %s"
-                    % (repr(name), repr(value)))
-        # Let anything in attribute_names be set from constructor.
-        for attr_name, attr_value in kwargs.items():
+        except InvalidCookieAttributeError:
+            raise InvalidCookieError(message="invalid name for new Cookie")
+        self.value = value or ''
+        if kwargs:
+            self._set_attributes(kwargs, ignore_bad_attributes=False)
+
+    def _set_attributes(self, attrs, ignore_bad_attributes=False):
+        for attr_name, attr_value in attrs.items():
             if not attr_name in self.attribute_names:
-                raise AttributeError("Can't set attribute '%s' "
-                                     "from constructor" % attr_name)
-            setattr(self, attr_name, attr_value)
+                if not ignore_bad_attributes:
+                    raise InvalidCookieAttributeError(attr_name, attr_value,
+                        "unknown cookie attribute '%s'" % attr_name)
+                _report_unknown_attribute(attr_name)
+
+            try:
+                setattr(self, attr_name, attr_value)
+            except InvalidCookieAttributeError:
+                if not ignore_bad_attributes:
+                    raise
+                _report_invalid_attribute(attr_name, attr_value)
+                continue
+
+    @classmethod
+    def from_dict(cls, cookie_dict, ignore_bad_attributes=True):
+        """Construct a Cookie object from a dict of strings to parse.
+
+        The main difference between this and Cookie(name, value, **kwargs) is
+        that the values in the argument to this method are parsed.
+        """
+        def parse(key):
+            value = cookie_dict.get(key)
+            parser = cls.attribute_parsers.get(key)
+            if parser:
+                try:
+                    value = parser(value)
+                except Exception as e:
+                    if not ignore_bad_attributes:
+                        raise InvalidCookieAttributeError(
+                            key, value,
+                            "did not parse with %s: %s"
+                            % (repr(parser), repr(e)))
+                    _report_invalid_attribute(key, value)
+            return value
+
+        name, value = parse('name'), parse('value')
+        cookie = Cookie(name, value)
+
+        # Remove these so we can pass the whole dict to _set_attributes
+        del cookie_dict['name']
+        if 'value' in cookie_dict:
+            del cookie_dict['value']
+
+        # Parse values from serialized formats into objects
+        parsed = cookie_dict.copy()
+        for key, value in parsed.items():
+            parser = cls.attribute_parsers.get(key)
+            if not parser:
+                continue
+            parsed[key] = parse(key)
+
+        cookie._set_attributes(parsed, ignore_bad_attributes)
+        return cookie
 
     @classmethod
     def from_string(cls, line, ignore_bad_cookies=False,
@@ -708,24 +763,6 @@ class Cookie(object):
             return None
         return cls.from_dict(cookie_dict,
                 ignore_bad_attributes=ignore_bad_attributes)
-
-    @classmethod
-    def from_dict(cls, cookie_dict, ignore_bad_attributes=True):
-        "Construct a Cookie object from a dict of strings to parse."
-        if not cookie_dict:
-            return None
-        for key, value in cookie_dict.items():
-            parser = cls.attribute_parsers.get(key)
-            if parser:
-                try:
-                    cookie_dict[key] = parser(value)
-                except InvalidCookieAttributeError:
-                    if not ignore_bad_attributes:
-                        raise
-                    logging.error("attribute %s failed parse: %s",
-                            repr(key), repr(value))
-        cookie = Cookie(**cookie_dict)
-        return cookie
 
     def to_dict(self):
         this_dict = {'name': self.name, 'value': self.value}

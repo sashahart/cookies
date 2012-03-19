@@ -902,8 +902,8 @@ class TestCookie(object):
             (("w", "m"), {'comment': 'a'}, {'comment': 'a'}),
             # invalid names
             # (unicode cases are done last because they mess with pytest print)
-            ((None, "m"), {}, AssertionError),
-            (("", "m"), {}, AssertionError),
+            ((None, "m"), {}, InvalidCookieError),
+            (("", "m"), {}, InvalidCookieError),
             (("ü", "m"), {}, InvalidCookieError),
             # invalid values
             (("w", None), {}, {'name': 'w'}),
@@ -924,8 +924,7 @@ class TestCookie(object):
         because the parse/render tests depend heavily on it.
         """
         creation_cases = self.creation_cases + [
-            # try an unknown attribute and get AttributeError
-            (("a", "b"), {'frob': 10}, AttributeError)
+            (("a", "b"), {'frob': 10}, InvalidCookieAttributeError)
             ]
         counter = 0
         for args, kwargs, expected in creation_cases:
@@ -1163,6 +1162,42 @@ class TestCookie(object):
 
         Cookie2('a', 'b fog')
         Cookie2('a', ' b=fo g')
+
+    def test_from_string(self):
+        with raises(InvalidCookieError):
+            Cookie.from_string("")
+        with raises(InvalidCookieError):
+            Cookie.from_string("", ignore_bad_attributes=True)
+        assert Cookie.from_string("", ignore_bad_cookies=True) == None
+
+    def test_from_dict(self):
+        assert Cookie.from_dict({'name': 'a', 'value': 'b'}) == \
+                Cookie('a', 'b')
+        assert Cookie.from_dict(
+                {'name': 'a', 'value': 'b', 'duh': 'no'},
+                ignore_bad_attributes=True) == \
+                Cookie('a', 'b')
+        with raises(InvalidCookieError):
+            Cookie.from_dict({}, ignore_bad_attributes=True)
+        with raises(InvalidCookieError):
+            Cookie.from_dict({}, ignore_bad_attributes=False)
+        with raises(InvalidCookieError):
+            Cookie.from_dict({'name': ''}, ignore_bad_attributes=False)
+        with raises(InvalidCookieError):
+            Cookie.from_dict({'name': None, 'value': 'b'},
+                    ignore_bad_attributes=False)
+        assert Cookie.from_dict({'name': 'foo'}) == Cookie('foo', None)
+        assert Cookie.from_dict({'name': 'foo', 'value': ''}) == \
+                Cookie('foo', None)
+        with raises(InvalidCookieAttributeError):
+            assert Cookie.from_dict(
+                    {'name': 'a', 'value': 'b', 'duh': 'no'},
+                    ignore_bad_attributes=False)
+        assert Cookie.from_dict({'name': 'a', 'value': 'b', 'expires': 2},
+            ignore_bad_attributes=True) == Cookie('a', 'b')
+        with raises (InvalidCookieAttributeError):
+            assert Cookie.from_dict({'name': 'a', 'value': 'b', 'expires': 2},
+                ignore_bad_attributes=False)
 
 
 class TestCookies(object):
