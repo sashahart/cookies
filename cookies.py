@@ -24,6 +24,7 @@ import re
 import datetime
 import logging
 import sys
+from unicodedata import normalize
 if sys.version_info >= (3, 0, 0):  # pragma: no cover
     from urllib.parse import quote as _default_quote, \
                              unquote as _default_unquote
@@ -312,8 +313,22 @@ def parse_string(data, unquote=default_unquote):
     """
     if data is None:
         return None
+
+    # We'll need to unquote to recover our UTF-8 data.
+    # In Python 2, unquote crashes on chars beyond ASCII. So encode functions
+    # had better not include anything beyond ASCII in data.
+    # In Python 3, unquote crashes on bytes objects, requiring conversion to
+    # str objects (unicode) using decode().
+    # But in Python 2, the same decode causes unquote to butcher the data.
+    # So in that case, just leave the bytes.
+    if isinstance(data, bytes):
+        if sys.version_info > (3, 0, 0):  # pragma: no cover
+            data = data.decode('ascii')
+    # Recover URL encoded data
     unquoted = unquote(data)
-    if isinstance(unquoted, bytes):
+    # Without this step, Python 2 will have good URL decoded *bytes*, which
+    # will therefore not normalize as unicode and not compare to the original.
+    if sys.version_info < (3, 0, 0):  # pragma: no cover
         unquoted = unquoted.decode('utf-8')
     return unquoted
 
@@ -382,6 +397,8 @@ def parse_path(value):
 
 def parse_value(value, allow_spaces=True, unquote=default_unquote):
     "Process a cookie value"
+    if value is None:
+        return None
     value = strip_spaces_and_quotes(value)
     value = parse_string(value, unquote=unquote)
     if not allow_spaces:
@@ -391,6 +408,8 @@ def parse_value(value, allow_spaces=True, unquote=default_unquote):
 
 def valid_name(name):
     "Validate a cookie name string"
+    if isinstance(name, bytes):
+        name = name.decode('ascii')
     if not Definitions.COOKIE_NAME_RE.match(name):
         return False
     # This module doesn't support $identifiers, which are part of an obsolete
@@ -401,16 +420,39 @@ def valid_name(name):
 
 
 def valid_value(value, quote=default_cookie_quote, unquote=default_unquote):
-    "Validate a cookie value string."
-    # Verify it encodes without loss...
+    """Validate a cookie value string.
+
+    This is generic across quote/unquote functions because it directly verifies
+    the encoding round-trip using the specified quote/unquote functions.
+    So if you use different quote/unquote functions, use something like this
+    as a replacement for valid_value::
+
+        my_valid_value = lambda value: valid_value(value, quote=my_quote,
+                                                          unquote=my_unquote)
+    """
+    if value is None:
+        return False
+
+    # Put the value through a round trip with the given quote and unquote
+    # functions, so we will know whether data will get lost or not in the event
+    # that we don't complain.
     encoded = encode_cookie_value(value, quote=quote)
     decoded = parse_string(encoded, unquote=unquote)
-    if isinstance(value, bytes):
-        if decoded.encode('utf-8') == value:
-            return True
-    if not decoded == value:
-        return False
-    return True
+
+    # If the original string made the round trip, this is a valid value for the
+    # given quote and unquote functions. Since the round trip can generate
+    # different unicode forms, normalize before comparing, so we can ignore
+    # trivial inequalities.
+    decoded_normalized = normalize("NFKD", decoded) \
+                         if not isinstance(decoded, bytes) \
+                         else decoded
+    value_normalized = normalize("NFKD", value) \
+                       if not isinstance(value, bytes) \
+                       else value
+    if decoded_normalized == value_normalized:
+        return True
+
+    return False
 
 
 def valid_date(date):
@@ -464,31 +506,37 @@ def valid_max_age(number):
 
 
 def encode_cookie_value(data, quote=default_cookie_quote):
-    """URL-encode and serialize strings to make them safe for a cookie value.
+    """URL-encode strings to make them safe for a cookie value.
 
     By default this uses urllib quoting, as used in many other cookie
     implementations and in other Python code, instead of an ad hoc escaping
     mechanism which includes backslashes (these also being illegal chars in RFC
     6265).
-    Reversible with parse_string().
     """
-    if not data:
-        return ''
+    if data is None:
+        return None
+
+    # encode() to ASCII bytes so quote won't crash on non-ASCII.
+    # but doing that to bytes objects is nonsense.
+    # On Python 2 encode crashes if s is bytes containing non-ASCII.
+    # On Python 3 encode crashes on all byte objects.
     if not isinstance(data, bytes):
-        data = data.encode('utf-8')
-    return quote(data)
+        data = data.encode("utf-8")
+
+    # URL encode data so it is safe for cookie value
+    quoted = quote(data)
+
+    # Don't force to bytes, so that downstream can use proper string API rather
+    # than crippled bytes, and to encourage encoding to be done just once.
+    return quoted
 
 
 def encode_extension_av(data, quote=default_extension_quote):
     """URL-encode strings to make them safe for an extension-av
     (extension attribute value): <any CHAR except CTLs or ";">
-
-    Reversible with parse_string().
     """
     if not data:
         return ''
-    if not isinstance(data, bytes):
-        data = data.encode('utf-8')
     return quote(data)
 
 
