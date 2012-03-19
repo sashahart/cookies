@@ -20,7 +20,7 @@ class Test(Command):
 
 setup(
     name="cookies",
-    version="0.9.0",
+    version="0.9.1",
     author="Sasha Hart",
     author_email="s@sashahart.net",
     url="https://github.com/sashahart/cookies",
