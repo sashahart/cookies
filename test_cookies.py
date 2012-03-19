@@ -2226,11 +2226,13 @@ test_valid_path = _simple_test(valid_path,
 def test_many_pairs():
     """Simple 'lots of pairs' test
     """
+    from_request = Cookies.from_request
+    header = "a0=0"
     for i in range(1, 100):
-        header = "; ".join("a%d=%d" % (j, j * 10) for j in range(0, i))
-        cookies = Cookies.from_request(header)
+        i_range = list(range(0, i))
+        cookies = from_request(header)
         assert len(cookies) == i
-        for j in range(0, i):
+        for j in i_range:
             key = 'a%d' % j
             assert cookies[key].value == str(j * 10)
             assert cookies[key].render_request(prefix='') == \
@@ -2240,11 +2242,14 @@ def test_many_pairs():
         cookies = Cookies()
         cookies.parse_request(header)
         assert len(cookies) == i
-        for j in range(0, i):
+        for j in i_range:
             key = 'a%d' % j
             assert cookies[key].value == str(j * 10)
             assert cookies[key].render_request(prefix='') == \
                     "a%d=%d" % (j, j * 10)
+
+        # Add another piece to the header
+        header += "; a%d=%d" % (i, i * 10)
 
 
 def test_parse_value():
