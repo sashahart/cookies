@@ -1408,6 +1408,15 @@ class TestCookies(object):
         assert not isinstance(run("Set-Cookie: a=b"), InvalidCookieError)
         assert isinstance(run("Cookie: a=b"), InvalidCookieError)
 
+    def test_exercise_parse_one_response_asctime(self):
+        asctime = 'Sun Nov  6 08:49:37 1994'
+        line = "Set-Cookie: a=b; Expires=%s" % asctime
+        response_dict = parse_one_response(line)
+        assert response_dict == \
+            {'expires': 'Sun Nov  6 08:49:37 1994', 'name': 'a', 'value': 'b'}
+        assert Cookie.from_dict(response_dict) == \
+                Cookie('a', 'b', expires=parse_date(asctime))
+
 
 def test_parse_date():
     """Throw a ton of dirty samples at the date parse/render and verify the
