@@ -158,36 +158,45 @@ class TestInvalidCookieError(object):
 class TestInvalidCookieAttributeError(object):
     """Exercise the trivial behavior of InvalidCookieAttributeError.
     """
+    def exception(self, *args, **kwargs):
+        "Generate an InvalidCookieAttributeError exception naturally"
+        try:
+            raise InvalidCookieAttributeError(*args, **kwargs)
+        except InvalidCookieAttributeError as exception:
+            return exception
+        return None
+
     def test_simple(self):
-        "This be the test"
-        def exception(*args, **kwargs):
-            "Gather an InvalidCookieAttributeError exception"
-            try:
-                raise InvalidCookieAttributeError(*args, **kwargs)
-            except InvalidCookieAttributeError as exception:
-                return exception
-            return None
-        e = exception("foo", "bar")
+        e = self.exception("foo", "bar")
         assert e.name == "foo"
         assert e.value == "bar"
 
+    def test_junk_in_loggables(self):
         # Spot check for obvious junk in loggable representations.
         # This isn't completely idle: for example, nulls are ignored in
         # %-formatted text, and this could be very misleading
-        e = exception("ya\x00y", "whee")
+        e = self.exception("ya\x00y", "whee")
         assert "\x00" not in repr(e)
         assert "\x00" not in str(e)
         assert "yay" not in repr(e)
         assert "yay" not in str(e)
 
-        e = exception("whee", "ya\x00y")
+        e = self.exception("whee", "ya\x00y")
         assert "\x00" not in repr(e)
         assert "\x00" not in str(e)
         assert "yay" not in repr(e)
         assert "yay" not in str(e)
 
-        assert "\n" not in repr(exception("yay", "foo\nbar"))
-        assert "\n" not in repr(exception("foo\nbar", "yay"))
+        assert "\n" not in repr(self.exception("yay", "foo\nbar"))
+        assert "\n" not in repr(self.exception("foo\nbar", "yay"))
+
+    def test_no_name(self):
+        # not recommended to do this, but we want to handle it if people do
+        e = self.exception(None, "stuff")
+        assert e.name == None
+        assert e.value == "stuff"
+        assert e.reason == None
+        assert 'stuff' in str(e)
 
 
 class TestDefinitions(object):
