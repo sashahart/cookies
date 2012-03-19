@@ -732,7 +732,7 @@ class Cookie(object):
         renderer = self.attribute_renderers.get('value', None)
         if renderer:
             value = renderer(value)
-        return "%s%s=%s" % (prefix, name, value)
+        return ''.join((prefix, name, "=", value))
 
     def render_response(self, prefix="Set-Cookie: "):
         """Render as a string formatted for HTTP response headers
@@ -747,10 +747,9 @@ class Cookie(object):
         renderer = self.attribute_renderers.get('value', None)
         if renderer:
             value = renderer(value)
-        buf = "%s%s=%s" % (prefix, name, value)
-        return "; ".join([buf] + [
-            (key if isinstance(value, bool)
-             else "%s=%s" % (key, value))
+        return '; '.join(
+            [''.join((prefix, name, '=', value))] +
+            [key if isinstance(value, bool) else '='.join((key, value))
             for key, value in self.attributes().items()])
 
     def __eq__(self, other):
