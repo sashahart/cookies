@@ -54,28 +54,47 @@ default_extension_quote = lambda item: _default_quote(
 default_unquote = _default_unquote
 
 
-def report_invalid_cookie(data):
-    "Uniform way for this file to log a bad cookie when exception suppressed"
-    logging.error("Invalid Cookie: %s", repr(data))
+def _report_invalid_cookie(data):
+    "How this module logs a bad cookie when exception suppressed"
+    logging.error("invalid Cookie: %s", repr(data))
 
 
-class InvalidCookieError(Exception):
-    """Raised when attempting to parse a cookie which is syntactically invalid
-    (in any way that has possibly serious implications).
+def _report_unknown_attribute(name):
+    "How this module logs an unknown attribute when exception suppressed"
+    logging.error("unknown Cookie attribute: %s", repr(name))
+
+
+def _report_invalid_attribute(name, value):
+    "How this module logs a bad attribute when exception suppressed"
+    logging.error("invalid Cookie attribute: %s=%s", repr(name), repr(value))
+
+
+class CookieError(Exception):
+    """Base class for this module's exceptions, so you can catch them all if
+    you want to.
     """
-    def __init__(self, data):
+    def __init__(self):
         Exception.__init__(self)
+
+
+class InvalidCookieError(CookieError):
+    """Raised when attempting to parse or construct a cookie which is
+    syntactically invalid (in any way that has possibly serious implications).
+    """
+    def __init__(self, data=None, message=""):
+        CookieError.__init__(self)
         self.data = data
+        self.message = message
 
     def __str__(self):
-        return '%s' % repr(self.data)
+        return '%s %s' % (repr(self.message), repr(self.data))
 
 
-class InvalidCookieAttributeError(Exception):
+class InvalidCookieAttributeError(CookieError):
     """Raised when setting an invalid attribute on a Cookie.
     """
     def __init__(self, name, value, reason=None):
-        Exception.__init__(self)
+        CookieError.__init__(self)
         self.name = name
         self.value = value
         self.reason = reason
@@ -569,8 +588,8 @@ def _parse_request(header_data, ignore_bad_cookies=False):
             invalid = match.group('invalid')
             if invalid:
                 if not ignore_bad_cookies:
-                    raise InvalidCookieError(invalid)
-                report_invalid_cookie(invalid)
+                    raise InvalidCookieError(data=invalid)
+                _report_invalid_cookie(invalid)
                 continue
             name = match.group('name')
             if name in cookies_dict:
@@ -578,8 +597,8 @@ def _parse_request(header_data, ignore_bad_cookies=False):
             cookies_dict[name] = match.group('value').strip('"')
         if not matches:
             if not ignore_bad_cookies:
-                raise InvalidCookieError(line)
-            report_invalid_cookie(line)
+                raise InvalidCookieError(data=line)
+            _report_invalid_cookie(line)
     return cookies_dict
 
 
@@ -594,8 +613,8 @@ def parse_one_response(line,
     match = Definitions.SET_COOKIE_HEADER_RE.match(line)
     if not match:
         if not ignore_bad_cookies:
-            raise InvalidCookieError(line)
-        report_invalid_cookie(line)
+            raise InvalidCookieError(data=line)
+        _report_invalid_cookie(line)
         return None
     cookie_dict.update({
         'name': match.group('name'),
@@ -608,8 +627,7 @@ def parse_one_response(line,
             if not ignore_bad_attributes:
                 raise InvalidCookieAttributeError(None, unrecognized,
                     "unrecognized")
-            logging.error("unrecognized cookie attribute: %s",
-                    unrecognized)
+            _report_unknown_attribute(unrecognized)
             continue
         # for unary flags
         for key in ('secure', 'httponly'):
@@ -647,8 +665,8 @@ def _parse_response(header_data,
         cookie_dicts.append(cookie_dict)
     if not cookie_dicts:
         if not ignore_bad_cookies:
-            raise InvalidCookieError(header_data)
-        report_invalid_cookie(header_data)
+            raise InvalidCookieError(data=header_data)
+        _report_invalid_cookie(header_data)
     return cookie_dicts
 
 
@@ -730,6 +748,8 @@ class Cookie(object):
         Others get left alone.
         """
         if name in self.attribute_names or name in ("name", "value"):
+            if name == 'name' and not value:
+                raise InvalidCookieError(message="Cookies must have names")
             # Ignore None values indicating unset attr. Other invalids should
             # raise error so users of __setattr__ can learn.
             if value is not None:
@@ -944,7 +964,7 @@ class Cookies(dict):
         except (InvalidCookieError):
             if not ignore_bad_cookies:
                 raise
-            report_invalid_cookie(header_data)
+            _report_invalid_cookie(header_data)
         return self
 
     def parse_response(self, header_data, ignore_bad_cookies=False,
