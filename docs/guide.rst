@@ -60,8 +60,8 @@ regardless of your input.
     <class 'cookies.InvalidCookieError'>
     >>> from cookies import Cookies
     >>> cookies = Cookies.from_request('Cookie: duh=frob')
-    >>> cookies['duh'].value
-    'frob'
+    >>> cookies['duh'].value == 'frob'
+    True
 
 (See the next section for more on Cookies collection objects.)
 
@@ -173,8 +173,8 @@ with the same name, to ensure that only the first one is taken.
     >>> cookies['c'].value == 'd'
     True
     >>> _ = cookies.parse_request('x=y; c=mumbles')
-    >>> cookies['x'].value
-    'y'
+    >>> cookies['x'].value == 'y'
+    True
     >>> cookies['c'].value == 'd' 
     True
 
