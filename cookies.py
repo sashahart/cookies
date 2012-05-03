@@ -64,9 +64,10 @@ def _report_unknown_attribute(name):
     logging.error("unknown Cookie attribute: %s", repr(name))
 
 
-def _report_invalid_attribute(name, value):
+def _report_invalid_attribute(name, value, reason):
     "How this module logs a bad attribute when exception suppressed"
-    logging.error("invalid Cookie attribute: %s=%s", repr(name), repr(value))
+    logging.error("invalid Cookie attribute (%s): %s=%s", reason, repr(name),
+            repr(value))
 
 
 class CookieError(Exception):
@@ -705,10 +706,10 @@ class Cookie(object):
 
             try:
                 setattr(self, attr_name, attr_value)
-            except InvalidCookieAttributeError:
+            except InvalidCookieAttributeError as error:
                 if not ignore_bad_attributes:
                     raise
-                _report_invalid_attribute(attr_name, attr_value)
+                _report_invalid_attribute(attr_name, attr_value, error.reason)
                 continue
 
     @classmethod
@@ -725,12 +726,11 @@ class Cookie(object):
                 try:
                     value = parser(value)
                 except Exception as e:
+                    reason = "did not parse with %s: %s" % (repr(parser), repr(e))
                     if not ignore_bad_attributes:
                         raise InvalidCookieAttributeError(
-                            key, value,
-                            "did not parse with %s: %s"
-                            % (repr(parser), repr(e)))
-                    _report_invalid_attribute(key, value)
+                            key, value, reason)
+                    _report_invalid_attribute(key, value, reason)
             return value
 
         name, value = parse('name'), parse('value')
