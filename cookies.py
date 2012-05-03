@@ -349,7 +349,7 @@ def parse_string(data, unquote=default_unquote):
     # Without this step, Python 2 may have good URL decoded *bytes*,
     # which will therefore not normalize as unicode and not compare to
     # the original.
-    if sys.version_info < (3, 0, 0):  # pragma: no cover
+    if isinstance(unquoted, bytes):
         unquoted = unquoted.decode('utf-8')
     return unquoted
 
