@@ -725,22 +725,13 @@ class Cookie(object):
         If ignore_bad_attributes=True (default), values which did not parse
         are set to '' in order to avoid passing bad data.
         """
-        def parse(key):
-            value = cookie_dict.get(key)
-            parser = cls.attribute_parsers.get(key)
-            if parser:
-                try:
-                    parsed_value = parser(value)
-                except Exception as e:
-                    reason = "did not parse with %s: %s" % (repr(parser), repr(e))
-                    if not ignore_bad_attributes:
-                        raise InvalidCookieAttributeError(
-                            key, value, reason)
-                    _report_invalid_attribute(key, value, reason)
-                    parsed_value = ''
-            return parsed_value
-
-        name, value = parse('name'), parse('value')
+        name = cookie_dict.get('name', None)
+        if not name:
+            raise InvalidCookieError("Cookie must have name")
+        raw_value = cookie_dict.get('value', '')
+        # Absence or failure of parser here is fatal; errors in present name
+        # and value should be found by Cookie.__init__.
+        value = cls.attribute_parsers['value'](raw_value)
         cookie = Cookie(name, value)
 
         # Parse values from serialized formats into objects
@@ -756,7 +747,16 @@ class Cookie(object):
                         "unknown cookie attribute '%s'" % key)
                 _report_unknown_attribute(key)
                 continue
-            parsed[key] = parse(key)
+            try:
+                parsed_value = parser(value)
+            except Exception as e:
+                reason = "did not parse with %s: %s" % (repr(parser), repr(e))
+                if not ignore_bad_attributes:
+                    raise InvalidCookieAttributeError(
+                        key, value, reason)
+                _report_invalid_attribute(key, value, reason)
+                parsed_value = ''
+            parsed[key] = parsed_value
 
         # Set the parsed objects (does object validation automatically)
         cookie._set_attributes(parsed, ignore_bad_attributes)
