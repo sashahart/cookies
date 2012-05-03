@@ -968,6 +968,8 @@ class Cookies(dict):
         """
         # Only take the first one, don't create new ones if unnecessary
         for cookie in args:
+            if cookie.name in self:
+                continue
             self[cookie.name] = cookie
         for key, value in kwargs.items():
             if key in self:
