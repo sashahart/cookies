@@ -721,20 +721,24 @@ class Cookie(object):
 
         The main difference between this and Cookie(name, value, **kwargs) is
         that the values in the argument to this method are parsed.
+
+        If ignore_bad_attributes=True (default), values which did not parse
+        are set to '' in order to avoid passing bad data.
         """
         def parse(key):
             value = cookie_dict.get(key)
             parser = cls.attribute_parsers.get(key)
             if parser:
                 try:
-                    value = parser(value)
+                    parsed_value = parser(value)
                 except Exception as e:
                     reason = "did not parse with %s: %s" % (repr(parser), repr(e))
                     if not ignore_bad_attributes:
                         raise InvalidCookieAttributeError(
                             key, value, reason)
                     _report_invalid_attribute(key, value, reason)
-            return value
+                    parsed_value = ''
+            return parsed_value
 
         name, value = parse('name'), parse('value')
         cookie = Cookie(name, value)
