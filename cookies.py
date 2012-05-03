@@ -1010,8 +1010,19 @@ class Cookies(dict):
         """
         cookies_dict = _parse_request(header_data,
                 ignore_bad_cookies=ignore_bad_cookies)
+        cookie_objects = []
+        for name, value in cookies_dict.items():
+            # Use from_dict to check name and parse value
+            cookie_dict = {'name': name, 'value': value}
+            try:
+                cookie = Cookie.from_dict(cookie_dict)
+            except InvalidCookieError:
+                if not ignore_bad_cookies:
+                    raise
+            else:
+                cookie_objects.append(cookie)
         try:
-            self.add(**cookies_dict)
+            self.add(*cookie_objects)
         except (InvalidCookieError):
             if not ignore_bad_cookies:
                 raise

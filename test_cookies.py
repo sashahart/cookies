@@ -2005,6 +2005,41 @@ def test_render_response():
                         expected)
 
 
+def test_backslash_roundtrip():
+    """Check that backslash in input or value stays backslash internally but
+    goes out as %5C, and comes back in again as a backslash.
+    """
+    reference = Cookie('xx', '\\')
+    assert len(reference.value) == 1
+    reference_request = reference.render_request()
+    reference_response = reference.render_response()
+    assert '\\' not in reference_request
+    assert '\\' not in reference_response
+    assert '%5C' in reference_request
+    assert '%5C' in reference_response
+
+    # Parse from multiple entry points
+    raw_cookie = r'xx="\"'
+    parsed_cookies = [Cookie.from_string(raw_cookie),
+              Cookies.from_request(raw_cookie)['xx'],
+              Cookies.from_response(raw_cookie)['xx']]
+    for parsed_cookie in parsed_cookies:
+        assert parsed_cookie.name == reference.name
+        assert parsed_cookie.value == reference.value
+        # Renders should match exactly
+        request = parsed_cookie.render_request()
+        response = parsed_cookie.render_response()
+        assert request == reference_request
+        assert response == reference_response
+        # Reparses should too
+        rrequest = Cookies.from_request(request)['xx']
+        rresponse = Cookies.from_response(response)['xx']
+        assert rrequest.name == reference.name
+        assert rrequest.value == reference.value
+        assert rresponse.name == reference.name
+        assert rresponse.value == reference.value
+
+
 def _simple_test(function, case_dict):
     "Macro for making simple case-based tests for a function call"
     def actual_test():
