@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -- coding: utf-8 --
+# -*- coding: utf-8 -*-
 """Tests for code in cookies.py.
 """
 from __future__ import unicode_literals
@@ -1195,7 +1195,7 @@ class TestCookie(object):
                     ignore_bad_attributes=False)
         assert Cookie.from_dict({'name': 'a', 'value': 'b', 'expires': 2},
             ignore_bad_attributes=True) == Cookie('a', 'b')
-        with raises (InvalidCookieAttributeError):
+        with raises(InvalidCookieAttributeError):
             assert Cookie.from_dict({'name': 'a', 'value': 'b', 'expires': 2},
                 ignore_bad_attributes=False)
 
@@ -1394,9 +1394,9 @@ class TestCookies(object):
             if expected == InvalidCookieError:
                 kwargs2 = kwargs.copy()
                 kwargs2['ignore_bad_cookies'] = True
-                assert not isinstance(run(arg, **kwargs2), Exception), \
-                        "InvalidCookieError not suppressed " \
-                        "by ignore_bad_cookies=True"
+                cookies = Cookies()
+                # Let natural exception raise, easier to figure out
+                cookies.parse_request(arg, **kwargs2)
 
         # Spot check that exception is raised for clearly wrong format
         assert not isinstance(run("Cookie: a=b"), InvalidCookieError)

@@ -334,7 +334,7 @@ def parse_string(data, unquote=default_unquote):
     if data is None:
         return None
 
-    # We'll need to unquote to recover our UTF-8 data.
+    # We'll soon need to unquote to recover our UTF-8 data.
     # In Python 2, unquote crashes on chars beyond ASCII. So encode functions
     # had better not include anything beyond ASCII in data.
     # In Python 3, unquote crashes on bytes objects, requiring conversion to
@@ -346,8 +346,9 @@ def parse_string(data, unquote=default_unquote):
             data = data.decode('ascii')
     # Recover URL encoded data
     unquoted = unquote(data)
-    # Without this step, Python 2 will have good URL decoded *bytes*, which
-    # will therefore not normalize as unicode and not compare to the original.
+    # Without this step, Python 2 may have good URL decoded *bytes*,
+    # which will therefore not normalize as unicode and not compare to
+    # the original.
     if sys.version_info < (3, 0, 0):  # pragma: no cover
         unquoted = unquoted.decode('utf-8')
     return unquoted
@@ -579,7 +580,7 @@ def render_date(date):
 
 def _parse_request(header_data, ignore_bad_cookies=False):
     """Turn one or more lines of 'Cookie:' header data into a dict mapping
-    cookie names to cookie values.
+    cookie names to cookie values (raw strings).
     """
     cookies_dict = {}
     for line in Definitions.EOL.split(header_data.strip()):
@@ -607,7 +608,7 @@ def parse_one_response(line,
         ignore_bad_cookies=False,
         ignore_bad_attributes=True):
     """Turn one 'Set-Cookie:' line into a dict mapping attribute names to
-    attribute values (as plain strings).
+    attribute values (raw strings).
     """
     cookie_dict = {}
     # Basic validation, extract name/value/attrs-chunk
@@ -736,19 +737,17 @@ class Cookie(object):
         name, value = parse('name'), parse('value')
         cookie = Cookie(name, value)
 
-        # Remove these so we can pass the whole dict to _set_attributes
-        del cookie_dict['name']
-        if 'value' in cookie_dict:
-            del cookie_dict['value']
-
         # Parse values from serialized formats into objects
-        parsed = cookie_dict.copy()
-        for key, value in parsed.items():
+        parsed = {}
+        for key, value in cookie_dict.items():
+            # Don't want to pass name/value to _set_attributes
+            if key in ('name', 'value'): continue
             parser = cls.attribute_parsers.get(key)
             if not parser:
                 continue
             parsed[key] = parse(key)
 
+        # Set the parsed objects (does object validation automatically)
         cookie._set_attributes(parsed, ignore_bad_attributes)
         return cookie
 
@@ -772,7 +771,9 @@ class Cookie(object):
     def validate(self, name, value):
         """Validate a cookie attribute with an appropriate validator.
 
-        Called automatically when an attribute value is set.
+        The value comes in already parsed (for example, an expires value
+        should be a datetime). Called automatically when an attribute
+        value is set.
         """
         validator = self.attribute_validators.get(name, None)
         if validator:
@@ -960,15 +961,15 @@ class Cookies(dict):
         """Add Cookie objects by their names, or create new ones under
         specified names.
 
-        Any unnamed arguments are interpreted as existing cookies, and are
-        added under the value in their .name attribute. With keyword arguments,
-        the key is interpreted as the cookie name and the value as the value
-        stored in the cookie.
+        Any unnamed arguments are interpreted as existing cookies, and
+        are added under the value in their .name attribute. With keyword
+        arguments, the key is interpreted as the cookie name and the
+        value as the UNENCODED value stored in the cookie.
         """
+        # Only take the first one, don't create new ones if unnecessary
         for cookie in args:
             self[cookie.name] = cookie
         for key, value in kwargs.items():
-            # Only take the first one, don't create new ones if unnecessary
             if key in self:
                 continue
             cookie = Cookie(key, value)
