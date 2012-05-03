@@ -478,8 +478,10 @@ def valid_value(value, quote=default_cookie_quote, unquote=default_unquote):
 
 def valid_date(date):
     "Validate an expires datetime object"
-    # Integer dates are not standard and not really interpretable here.
-    if isinstance(date, int):
+    # We want something that acts like a datetime. In particular,
+    # strings indicate a failure to parse down to an object and ints are
+    # nonstandard and ambiguous at best.
+    if not hasattr(date, 'tzinfo'):
         return False
     # Relevant RFCs define UTC as 'close enough' to GMT, and the maximum
     # difference between UTC and GMT is often stated to be less than a second.
