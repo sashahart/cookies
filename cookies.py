@@ -750,6 +750,11 @@ class Cookie(object):
             if key in ('name', 'value'): continue
             parser = cls.attribute_parsers.get(key)
             if not parser:
+                # Don't let totally unknown attributes pass silently
+                if not ignore_bad_attributes:
+                    raise InvalidCookieAttributeError(key, value,
+                        "unknown cookie attribute '%s'" % key)
+                _report_unknown_attribute(key)
                 continue
             parsed[key] = parse(key)
 
