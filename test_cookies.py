@@ -994,7 +994,7 @@ class TestCookie(object):
         "Test rendering Cookie object for Set-Cookie: header"
         for name, value in self.names_values:
             cookie = Cookie(name, value)
-            expected = "Set-Cookie: {name}={value}".format(
+            expected = "{name}={value}".format(
                     name=name, value=value)
             assert cookie.render_response() == expected
         for data, result in [
@@ -1020,7 +1020,7 @@ class TestCookie(object):
                     "baz=bam; Path=/; Secure; HttpOnly"),
                 ]:
             cookie = Cookie(**data)
-            actual = sorted(cookie.render_response(prefix='').split("; "))
+            actual = sorted(cookie.render_response().split("; "))
             ideal = sorted(result.split("; "))
             assert actual == ideal
 
@@ -1035,10 +1035,8 @@ class TestCookie(object):
                 }
         for args, ideal in cases.items():
             cookie = Cookie(*args)
-            assert cookie.render_response() == \
-                    'Set-Cookie: ' + ideal
-            assert cookie.render_request() == \
-                    'Cookie: ' + ideal
+            assert cookie.render_response() == ideal
+            assert cookie.render_request() == ideal
 
     def test_legacy_quotes(self):
         """Check that cookies which delimit values with quotes are understood
@@ -1051,7 +1049,7 @@ class TestCookie(object):
         assert cookie.version == 1
         assert cookie.path == "/foo"
         pieces = cookie.render_response().split("; ")
-        assert pieces[0] == 'Set-Cookie: y=foo'
+        assert pieces[0] == 'y=foo'
         assert set(pieces[1:]) == set([
             'Path=/foo', 'Version=1'
             ])
@@ -1061,12 +1059,12 @@ class TestCookie(object):
         a = Cookie('a', 'blah')
         a.expires = parse_date("Wed, 23-Jan-1992 00:01:02 GMT")
         assert a.render_response() == \
-                'Set-Cookie: a=blah; Expires=Thu, 23 Jan 1992 00:01:02 GMT'
+                'a=blah; Expires=Thu, 23 Jan 1992 00:01:02 GMT'
 
         b = Cookie('b', 'blr')
         b.expires = parse_date("Sun Nov  6 08:49:37 1994")
         assert b.render_response() == \
-                'Set-Cookie: b=blr; Expires=Sun, 06 Nov 1994 08:49:37 GMT'
+                'b=blr; Expires=Sun, 06 Nov 1994 08:49:37 GMT'
 
     def test_eq(self):
         "Smoke test equality/inequality with Cookie objects"
@@ -1144,18 +1142,18 @@ class TestCookie(object):
             assert hasattr(cookie, key)
             assert getattr(cookie, key) == None
         cookie.foo = "abc"
-        assert cookie.render_request() == "Cookie: a=b"
-        assert cookie.render_response() == "Set-Cookie: a=b; Foo=a|b|c"
+        assert cookie.render_request() == "a=b"
+        assert cookie.render_response() == "a=b; Foo=a|b|c"
         cookie.foo = None
         # Setting it to None makes it drop from the listing
-        assert cookie.render_response() == "Set-Cookie: a=b"
+        assert cookie.render_response() == "a=b"
 
         cookie.bar = "what"
         assert cookie.bar == "what"
-        assert cookie.render_request() == "Cookie: a=b"
+        assert cookie.render_request() == "a=b"
         # bar's renderer returns a bool; if it's True we get Bar.
         # that's a special case for flags like HttpOnly.
-        assert cookie.render_response() == "Set-Cookie: a=b; Bar"
+        assert cookie.render_response() == "a=b; Bar"
 
         with raises(InvalidCookieAttributeError):
             cookie.baz = "anything"
@@ -1250,7 +1248,7 @@ class TestCookies(object):
             rep = repr(cookies)
             res = cookies.render_response()
             req = cookies.render_request()
-            reqc = cookies.render_request(combined=True, prefix='')
+            reqc = cookies.render_request(combined=True)
 
             # Very basic sanity check on renders, fail fast and in a simple way
             # if output is truly terrible
@@ -1299,7 +1297,6 @@ class TestCookies(object):
             for key in cookies:
                 cookies[key].max_age = 42
             for line in cookies.render_response().split("\r\n"):
-                assert line.startswith("Set-Cookie: ")
                 assert line.endswith("Max-Age=42")
 
             # Spot check attribute deletion
@@ -1977,7 +1974,7 @@ def test_render_request():
         # can't reproduce examples which are supposed to throw parse errors
         if isinstance(cookies, type) and issubclass(cookies, Exception):
             continue
-        rendered = cookies.render_request(prefix='', combined=True)
+        rendered = cookies.render_request(combined=True)
         expected, actual = _cheap_request_parse(arg, rendered)
         # we can only use set() here because requests aren't order sensitive.
         assert set(actual) == set(expected)
@@ -1997,7 +1994,7 @@ def test_render_response():
         # can't reproduce examples which are supposed to throw parse errors
         if isinstance(cookies, type) and issubclass(cookies, Exception):
             continue
-        rendered = cookies.render_response(prefix='')
+        rendered = cookies.render_response()
         expected, actual = _cheap_response_parse(arg, rendered)
         expected, actual = set(expected), set(actual)
         assert actual == expected, \
@@ -2323,7 +2320,7 @@ def test_many_pairs():
         for j in i_range:
             key = 'a%d' % j
             assert cookies[key].value == str(j * 10)
-            assert cookies[key].render_request(prefix='') == \
+            assert cookies[key].render_request() == \
                     "a%d=%d" % (j, j * 10)
 
         # same test, different entry point
@@ -2333,7 +2330,7 @@ def test_many_pairs():
         for j in i_range:
             key = 'a%d' % j
             assert cookies[key].value == str(j * 10)
-            assert cookies[key].render_request(prefix='') == \
+            assert cookies[key].render_request() == \
                     "a%d=%d" % (j, j * 10)
 
         # Add another piece to the header

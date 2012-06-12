@@ -105,13 +105,13 @@ from_string).
         >>> a = Cookie('a', 'blah')
         >>> a.expires = parse_date("Wed, 23-Jan-1992 00:01:02 GMT")
         >>> a.render_response()
-        'Set-Cookie: a=blah; Expires=Thu, 23 Jan 1992 00:01:02 GMT'
+        'a=blah; Expires=Thu, 23 Jan 1992 00:01:02 GMT'
 
         >>> # asctime format is also handled...
         >>> b = Cookie('b', 'blr')
         >>> b.expires = parse_date("Sun Nov  6 08:49:37 1994")
         >>> b.render_response()
-        'Set-Cookie: b=blr; Expires=Sun, 06 Nov 1994 08:49:37 GMT'
+        'b=blr; Expires=Sun, 06 Nov 1994 08:49:37 GMT'
 
 Cookie objects can be meaningfully compared; they are equal or unequal based on
 their attributes. If one has an attribute the other is missing, they are not
@@ -216,19 +216,14 @@ one line.
     >>> cookies.add(Cookie('mom', 'strong'))
     >>> cookies.add(Cookie('dad', 'pretty'))
     >>> sorted(cookies.render_request().split("\r\n"))
-    ['Cookie: dad=pretty', 'Cookie: mom=strong']
-
-If you don't like the prefix, you can override or suppress it.
-
-    >>> sorted(cookies.render_request(prefix="").split("\r\n"))
     ['dad=pretty', 'mom=strong']
 
 Combined format separates cookies with semicolons, the other one separates with
 CRLF line endings.
 
     >>> s = cookies.render_request(combined=True)
-    >>> s == 'Cookie: dad=pretty; mom=strong'
-    ... or s == 'Cookie: mom=strong; dad=pretty'
+    >>> s == 'dad=pretty; mom=strong'
+    ... or s == 'mom=strong; dad=pretty'
     True
 
 Each individual cookie can be rendered either in the format for an HTTP
@@ -239,13 +234,13 @@ rendered request headers don't include attributes (as they shouldn't)::
     >>> from datetime import datetime
     >>> cookies = Cookies(a='foo', b='bar')
     >>> cookies['a'].render_request()
-    'Cookie: a=foo'
+    'a=foo'
     >>> cookies['b'].max_age = 42
     >>> cookies['b'].render_response()
-    'Set-Cookie: b=bar; Max-Age=42'
+    'b=bar; Max-Age=42'
     >>> cookies['b'].max_age += 10
     >>> cookies['b'].render_response()
-    'Set-Cookie: b=bar; Max-Age=52'
+    'b=bar; Max-Age=52'
 
     # Set attributes on individual cookies.
     >>> cookies['a'].expires = datetime(2003, 1, 23, 0, 0, 0)
@@ -257,17 +252,17 @@ rendered request headers don't include attributes (as they shouldn't)::
     # Render request headers
     >>> rendered = cookies.render_request()
     >>> sorted(rendered.split("\r\n"))
-    ['Cookie: a=foo', 'Cookie: b=bar', 'Cookie: c=d']
+    ['a=foo', 'b=bar', 'c=d']
 
     # Render response headers - more detail.
     >>> rendered = cookies.render_response()
     >>> lines = sorted(rendered.split("\r\n"))
     >>> lines[0]
-    'Set-Cookie: a=foo; Expires=Thu, 23 Jan 2003 00:00:00 GMT'
+    'a=foo; Expires=Thu, 23 Jan 2003 00:00:00 GMT'
     >>> lines[1]
-    'Set-Cookie: b=bar; Max-Age=52'
+    'b=bar; Max-Age=52'
     >>> lines[2]
-    'Set-Cookie: c=d; Path=/'
+    'c=d; Path=/'
 
 Cookies objects can also be compared to each other: this is the same as
 comparing all their individual cookies.

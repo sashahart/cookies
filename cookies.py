@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+__version__ = "1.0.0"
 import re
 import datetime
 import logging
@@ -837,7 +838,7 @@ class Cookie(object):
             dictionary[cookie_attr_name] = value
         return dictionary
 
-    def render_request(self, prefix="Cookie: "):
+    def render_request(self):
         """Render as a string formatted for HTTP request headers
         (simple 'Cookie: ' style).
         """
@@ -849,9 +850,9 @@ class Cookie(object):
         renderer = self.attribute_renderers.get('value', None)
         if renderer:
             value = renderer(value)
-        return ''.join((prefix, name, "=", value))
+        return ''.join((name, "=", value))
 
-    def render_response(self, prefix="Set-Cookie: "):
+    def render_response(self):
         """Render as a string formatted for HTTP response headers
         (detailed 'Set-Cookie: ' style).
         """
@@ -865,7 +866,7 @@ class Cookie(object):
         if renderer:
             value = renderer(value)
         return '; '.join(
-            [''.join((prefix, name, '=', value))] +
+            [''.join((name, '=', value))] +
             [key if isinstance(value, bool) else '='.join((key, value))
             for key, value in self.attributes().items()])
 
@@ -1090,24 +1091,23 @@ class Cookies(dict):
                 ignore_bad_attributes=ignore_bad_attributes)
         return cookies
 
-    def render_request(self, combined=False, prefix="Cookie: "):
+    def render_request(self, combined=False):
         """Render the dict's Cookie objects into a string formatted for HTTP
         request headers (simple 'Cookie: ' style).
         """
         if not combined:
             return "\r\n".join(
-                cookie.render_request(prefix=prefix)
+                cookie.render_request()
                 for cookie in self.values())
-        return "%s%s" % (prefix, "; ".join(
-                cookie.render_request(prefix='')
+        return ("; ".join(cookie.render_request()
                 for cookie in self.values()))
 
-    def render_response(self, prefix="Set-Cookie: "):
+    def render_response(self):
         """Render the dict's Cookie objects into a string formatted for HTTP
         response headers (detailed 'Set-Cookie: ' style).
         """
         return "\r\n".join(
-                cookie.render_response(prefix=prefix)
+                cookie.render_response()
                 for cookie in self.values())
 
     def __repr__(self):
