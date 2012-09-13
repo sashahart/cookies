@@ -1458,6 +1458,13 @@ class TestCookies(object):
         assert Cookie.from_dict(response_dict) == \
                 Cookie('a', 'b', expires=parse_date(asctime))
 
+    def test_get_all(self):
+        cookies = Cookies.from_request('a=b; a=c; b=x')
+        assert cookies['a'].value == 'b'
+        assert cookies['b'].value == 'x'
+        values = [cookie.value for cookie in cookies.get_all('a')]
+        assert values == ['b', 'c']
+
 
 def test_parse_date():
     """Throw a ton of dirty samples at the date parse/render and verify the

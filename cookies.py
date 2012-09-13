@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 import re
 import datetime
 import logging
@@ -597,9 +597,12 @@ def _parse_request(header_data, ignore_bad_cookies=False):
                 _report_invalid_cookie(invalid)
                 continue
             name = match.group('name')
-            if name in cookies_dict:
-                continue
-            cookies_dict[name] = match.group('value').strip('"')
+            values = cookies_dict.get(name)
+            value = match.group('value').strip('"')
+            if values:
+                values.append(value)
+            else:
+                cookies_dict[name] = [value]
         if not matches:
             if not ignore_bad_cookies:
                 raise InvalidCookieError(data=line)
@@ -967,6 +970,7 @@ class Cookies(dict):
     """
     def __init__(self, *args, **kwargs):
         dict.__init__(self)
+        self.all_cookies = []
         self.add(*args, **kwargs)
 
     def add(self, *args, **kwargs):
@@ -978,16 +982,23 @@ class Cookies(dict):
         arguments, the key is interpreted as the cookie name and the
         value as the UNENCODED value stored in the cookie.
         """
-        # Only take the first one, don't create new ones if unnecessary
+        # Only the first one is accessible through the main interface,
+        # others accessible through get_all (all_cookies).
         for cookie in args:
+            self.all_cookies.append(cookie)
             if cookie.name in self:
                 continue
             self[cookie.name] = cookie
         for key, value in kwargs.items():
+            cookie = Cookie(key, value)
+            self.all_cookies.append(cookie)
             if key in self:
                 continue
-            cookie = Cookie(key, value)
             self[key] = cookie
+
+    def get_all(self, key):
+        return [cookie for cookie in self.all_cookies
+                if cookie.name == key]
 
     def parse_request(self, header_data, ignore_bad_cookies=False):
         """Parse 'Cookie' header data into Cookie objects, and add them to
@@ -1012,16 +1023,17 @@ class Cookies(dict):
         cookies_dict = _parse_request(header_data,
                 ignore_bad_cookies=ignore_bad_cookies)
         cookie_objects = []
-        for name, value in cookies_dict.items():
-            # Use from_dict to check name and parse value
-            cookie_dict = {'name': name, 'value': value}
-            try:
-                cookie = Cookie.from_dict(cookie_dict)
-            except InvalidCookieError:
-                if not ignore_bad_cookies:
-                    raise
-            else:
-                cookie_objects.append(cookie)
+        for name, values in cookies_dict.items():
+            for value in values:
+                # Use from_dict to check name and parse value
+                cookie_dict = {'name': name, 'value': value}
+                try:
+                    cookie = Cookie.from_dict(cookie_dict)
+                except InvalidCookieError:
+                    if not ignore_bad_cookies:
+                        raise
+                else:
+                    cookie_objects.append(cookie)
         try:
             self.add(*cookie_objects)
         except (InvalidCookieError):
