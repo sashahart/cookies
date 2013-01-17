@@ -44,7 +44,7 @@ Features
     >>> # Can also write explicitly: cookies['rocky'] = Cookie['road']
     >>> cookies['rocky'].path = "/cookie" 
     >>> cookies.render_request()
-    'Cookie: rocky=road'
+    'rocky=road'
 * Friendly to customization, extension, and reuse of its parts. 
   Unlike Cookie.py, it doesn't lock all implementation inside its own classes
   (forcing you to write ugly wrappers as Django, Trac, Werkzeug/Flask, web.py
