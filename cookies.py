@@ -290,7 +290,9 @@ class Definitions(object):
                 |
                 [{value}]
                 |
-                [{value}][{value} ]*[{value}]+)
+                [{value}][{value} ]*[{value}]+
+                |
+                )
 
         # ... Or something way off-spec - extract to report and move on
         |
