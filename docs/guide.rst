@@ -222,8 +222,8 @@ Combined format separates cookies with semicolons, the other one separates with
 CRLF line endings.
 
     >>> s = cookies.render_request(combined=True)
-    >>> s == 'dad=pretty; mom=strong'
-    ... or s == 'mom=strong; dad=pretty'
+    >>> (s == 'dad=pretty; mom=strong'
+    ... or s == 'mom=strong; dad=pretty')
     True
 
 Each individual cookie can be rendered either in the format for an HTTP
