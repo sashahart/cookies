@@ -1,6 +1,6 @@
 """Parse, manipulate and render cookies in a convenient way.
 
-Copyright (c) 2011 Sasha Hart.
+Copyright (c) 2011-2013, Sasha Hart.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 import re
 import datetime
 import logging
@@ -1105,24 +1105,22 @@ class Cookies(dict):
                 ignore_bad_attributes=ignore_bad_attributes)
         return cookies
 
-    def render_request(self, combined=False):
+    def render_request(self, sort=True):
         """Render the dict's Cookie objects into a string formatted for HTTP
         request headers (simple 'Cookie: ' style).
         """
-        if not combined:
-            return "\r\n".join(
-                cookie.render_request()
-                for cookie in self.values())
-        return ("; ".join(cookie.render_request()
-                for cookie in self.values()))
+        if not sort:
+            return ("; ".join(
+                cookie.render_request() for cookie in self.values()))
+        return ("; ".join(sorted(
+            cookie.render_request() for cookie in self.values())))
 
-    def render_response(self):
-        """Render the dict's Cookie objects into a string formatted for HTTP
-        response headers (detailed 'Set-Cookie: ' style).
+    def render_response(self, sort=True):
+        """Render the dict's Cookie objects into list of strings formatted for
+        HTTP response headers (detailed 'Set-Cookie: ' style).
         """
-        return "\r\n".join(
-                cookie.render_response()
-                for cookie in self.values())
+        rendered = [cookie.render_response() for cookie in self.values()]
+        return rendered if not sort else sorted(rendered)
 
     def __repr__(self):
         return "Cookies(%s)" % ', '.join(

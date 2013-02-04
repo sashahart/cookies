@@ -1248,21 +1248,18 @@ class TestCookies(object):
             rep = repr(cookies)
             res = cookies.render_response()
             req = cookies.render_request()
-            reqc = cookies.render_request(combined=True)
 
             # Very basic sanity check on renders, fail fast and in a simple way
             # if output is truly terrible
             assert rep.count('=') == length
-            assert res.count('=') == length
-            assert len(res.split("\n")) == length
+            assert len(res) == length
+            assert [item.count('=') == 1 for item in res]
             assert req.count('=') == length
-            assert len(req.split("\n")) == length
-            assert reqc.count('=') == length
-            assert len(reqc.split("\n")) == 1
+            assert len(req.split(";")) == length
 
             # Explicitly parse out the data (this can be simple since the
             # output should be in a highly consistent format)
-            pairs = [item.split("=") for item in reqc.split("; ")]
+            pairs = [item.split("=") for item in req.split("; ")]
             assert len(pairs) == length
             for name, value in pairs:
                 cookie = cookies[name]
@@ -1277,7 +1274,8 @@ class TestCookies(object):
             assert parsed == cookies
 
             parsed = Cookies()
-            parsed.parse_response(res)
+            for item in res:
+                parsed.parse_response(item)
             assert parsed == cookies
 
             # Check that all the requested cookies were created correctly:
@@ -1296,7 +1294,7 @@ class TestCookies(object):
             # with these particular parameters. Not a torture test.
             for key in cookies:
                 cookies[key].max_age = 42
-            for line in cookies.render_response().split("\r\n"):
+            for line in cookies.render_response():
                 assert line.endswith("Max-Age=42")
 
             # Spot check attribute deletion
@@ -1707,13 +1705,6 @@ HEADER_CASES = [
         ("SID=242d96421d4e", {},
             Cookies(SID='242d96421d4e'),
             Cookies(SID='242d96421d4e')),
-        # Two pairs split over two lines should work with both.
-        ("a=b\r\nc=d\r\n", {},
-            Cookies(a='b', c='d'),
-            Cookies(a='b', c='d')),
-        ("foo=b\r\nc=d", {},
-            Cookies(foo='b', c='d'),
-            Cookies(foo='b', c='d')),
         # Two pairs on SAME line should work with request, fail with response.
         # if ignore_bad_attributes, response should not raise.
         # and ignore_bad_attributes behavior should be default
@@ -1956,10 +1947,12 @@ def _cheap_response_parse(arg1, arg2):
     """
     def crumble(arg):
         "Break down string into pieces"
-        lines = [line for line in re.split("\r\n", arg) if line]
+        lines = [line for line in arg if line]
         done = []
         for line in lines:
             clauses = [clause for clause in line.split(';')]
+            import logging
+            logging.error("clauses %r", clauses)
             name, value = re.split(" *= *", clauses[0], 1)
             value = unquote(value.strip(' "'))
             attrs = [re.split(" *= *", clause, 1) \
@@ -1969,7 +1962,9 @@ def _cheap_response_parse(arg1, arg2):
             attrs = [(k, v.strip(' "')) for k, v in attrs]
             done.append((name, value, tuple(attrs)))
         return done
-    return crumble(arg1), crumble(arg2)
+    result1 = crumble([arg1])
+    result2 = crumble(arg2)
+    return result1, result2
 
 
 def test_render_request():
@@ -1981,7 +1976,7 @@ def test_render_request():
         # can't reproduce examples which are supposed to throw parse errors
         if isinstance(cookies, type) and issubclass(cookies, Exception):
             continue
-        rendered = cookies.render_request(combined=True)
+        rendered = cookies.render_request()
         expected, actual = _cheap_request_parse(arg, rendered)
         # we can only use set() here because requests aren't order sensitive.
         assert set(actual) == set(expected)

@@ -215,16 +215,8 @@ one line.
     >>> cookies = Cookies()
     >>> cookies.add(Cookie('mom', 'strong'))
     >>> cookies.add(Cookie('dad', 'pretty'))
-    >>> sorted(cookies.render_request().split("\r\n"))
-    ['dad=pretty', 'mom=strong']
-
-Combined format separates cookies with semicolons, the other one separates with
-CRLF line endings.
-
-    >>> s = cookies.render_request(combined=True)
-    >>> (s == 'dad=pretty; mom=strong'
-    ... or s == 'mom=strong; dad=pretty')
-    True
+    >>> cookies.render_request()
+    'dad=pretty; mom=strong'
 
 Each individual cookie can be rendered either in the format for an HTTP
 request, or the format for an HTTP response. Attribute values can be
@@ -250,18 +242,16 @@ rendered request headers don't include attributes (as they shouldn't)::
     '/'
 
     # Render request headers
-    >>> rendered = cookies.render_request()
-    >>> sorted(rendered.split("\r\n"))
-    ['a=foo', 'b=bar', 'c=d']
+    >>> cookies.render_request()
+    'a=foo; b=bar; c=d'
 
     # Render response headers - more detail.
     >>> rendered = cookies.render_response()
-    >>> lines = sorted(rendered.split("\r\n"))
-    >>> lines[0]
+    >>> rendered[0]
     'a=foo; Expires=Thu, 23 Jan 2003 00:00:00 GMT'
-    >>> lines[1]
+    >>> rendered[1]
     'b=bar; Max-Age=52'
-    >>> lines[2]
+    >>> rendered[2]
     'c=d; Path=/'
 
 Cookies objects can also be compared to each other: this is the same as
