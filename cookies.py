@@ -57,18 +57,17 @@ default_unquote = _default_unquote
 
 def _report_invalid_cookie(data):
     "How this module logs a bad cookie when exception suppressed"
-    logging.error("invalid Cookie: %s", repr(data))
+    logging.error("invalid Cookie: %r", data)
 
 
 def _report_unknown_attribute(name):
     "How this module logs an unknown attribute when exception suppressed"
-    logging.error("unknown Cookie attribute: %s", repr(name))
+    logging.error("unknown Cookie attribute: %r", name)
 
 
 def _report_invalid_attribute(name, value, reason):
     "How this module logs a bad attribute when exception suppressed"
-    logging.error("invalid Cookie attribute (%s): %s=%s", reason, repr(name),
-            repr(value))
+    logging.error("invalid Cookie attribute (%s): %r=%r", reason, name, value)
 
 
 class CookieError(Exception):
@@ -89,7 +88,7 @@ class InvalidCookieError(CookieError):
         self.message = message
 
     def __str__(self):
-        return '%s %s' % (repr(self.message), repr(self.data))
+        return '%r %r' % (self.message, self.data)
 
 
 class InvalidCookieAttributeError(CookieError):
@@ -104,8 +103,8 @@ class InvalidCookieAttributeError(CookieError):
     def __str__(self):
         prefix = ("%s: " % self.reason) if self.reason else ""
         if self.name is None:
-            return '%s%s' % (prefix, repr(self.value))
-        return '%s%s = %s' % (prefix, repr(self.name), repr(self.value))
+            return '%s%r' % (prefix, self.value)
+        return '%s%r = %r' % (prefix, self.name, self.value)
 
 
 class Definitions(object):
@@ -756,7 +755,7 @@ class Cookie(object):
             try:
                 parsed_value = parser(value)
             except Exception as e:
-                reason = "did not parse with %s: %s" % (repr(parser), repr(e))
+                reason = "did not parse with %r: %r" % (parser, e)
                 if not ignore_bad_attributes:
                     raise InvalidCookieAttributeError(
                         key, value, reason)
@@ -1123,9 +1122,8 @@ class Cookies(dict):
         return rendered if not sort else sorted(rendered)
 
     def __repr__(self):
-        return "Cookies(%s)" % ', '.join(
-                "%s=%s" % (name, repr(cookie.value))
-                for (name, cookie) in self.items())
+        return "Cookies(%s)" % ', '.join("%s=%r" % (name, cookie.value) for
+                                         (name, cookie) in self.items())
 
     def __eq__(self, other):
         """Test if a Cookies object is globally 'equal' to another one by
