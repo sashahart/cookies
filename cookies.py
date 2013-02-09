@@ -27,13 +27,13 @@ import logging
 import sys
 from unicodedata import normalize
 if sys.version_info >= (3, 0, 0):  # pragma: no cover
-    from urllib.parse import quote as _default_quote, \
-                             unquote as _default_unquote
+    from urllib.parse import (
+        quote as _default_quote, unquote as _default_unquote)
     basestring = str
     long = int
 else:  # pragma: no cover
-    from urllib import quote as _default_quote, \
-                       unquote as _default_unquote
+    from urllib import (
+        quote as _default_quote, unquote as _default_unquote)
 
 
 def _total_seconds(td):
@@ -47,10 +47,10 @@ def _total_seconds(td):
 # out. the differences are because of what cookie-octet may contain
 # vs the more liberal spec for extension-av
 default_cookie_quote = lambda item: _default_quote(
-                             item, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
+    item, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
 
 default_extension_quote = lambda item: _default_quote(
-                             item, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
+    item, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
 
 default_unquote = _default_unquote
 
@@ -149,7 +149,7 @@ class Definitions(object):
         # garbage at the end (hence the \Z; $ matches before newline).
         (?P<attrs>(?:;[ ]*[{cookie_av}]+)*)
         """.format(name=COOKIE_NAME, cookie_av=EXTENSION_AV + ";",
-                cookie_octet=COOKIE_OCTET, value="[^;]")
+                   cookie_octet=COOKIE_OCTET, value="[^;]")
 
     # Now we specify the individual patterns for the attribute extraction pass
     # of Set-Cookie parsing (mapping to *-av in the RFC grammar). Things which
@@ -178,7 +178,8 @@ class Definitions(object):
     # Generate a mapping of months to use in render/parse, to avoid
     # localizations which might be produced by strftime (e.g. %a -> Mayo)
     month_list = ["January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"]
+                  "July", "August", "September", "October", "November",
+                  "December"]
     month_abbr_list = [item[:3] for item in month_list]
     month_numbers = {}
     for index, name in enumerate(month_list):
@@ -191,7 +192,7 @@ class Definitions(object):
 
     # Same drill with weekdays, for the same reason.
     weekday_list = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-            "Saturday", "Sunday"]
+                    "Saturday", "Sunday"]
     weekday_abbr_list = [item[:3] for item in weekday_list]
     WEEKDAY_SHORT = "(?:" + "|".join(item[:3] for item in weekday_list) + ")"
     WEEKDAY_LONG = "(?:" + "|".join(item for item in weekday_list) + ")"
@@ -231,7 +232,7 @@ class Definitions(object):
         )
     """
     DATE = DATE.format(wdy=WEEKDAY_SHORT, weekday=WEEKDAY_LONG,
-            day=DAY_OF_MONTH, mon=MONTH_SHORT, month=MONTH_LONG)
+                       day=DAY_OF_MONTH, mon=MONTH_SHORT, month=MONTH_LONG)
 
     EXPIRES_AV = "Expires=(?P<expires>%s)" % DATE
 
@@ -259,7 +260,7 @@ class Definitions(object):
         # next semicolon) - but do not capture these.
         [ ]*
     """.format(expires=EXPIRES_AV, max_age=MAX_AGE_AV, domain=DOMAIN_AV,
-            path=PATH_AV, stuff=EXTENSION_AV)
+               path=PATH_AV, stuff=EXTENSION_AV)
 
     # For request data ("Cookie: ") parsing, with finditer cf. RFC 6265 4.2.1
     COOKIE = """(?x) # Verbose mode
@@ -390,7 +391,7 @@ def parse_date(value):
     data['year'] = max(1900, min(year, 9999))
     # Other things which are numbers should convert to integer
     for field in ['day', 'hour', 'minute', 'second']:
-        if data[field] == None:
+        if data[field] is None:
             data[field] = 0
         data[field] = int(data[field])
     # Look up the number datetime needs for the named month
@@ -466,15 +467,12 @@ def valid_value(value, quote=default_cookie_quote, unquote=default_unquote):
     # given quote and unquote functions. Since the round trip can generate
     # different unicode forms, normalize before comparing, so we can ignore
     # trivial inequalities.
-    decoded_normalized = normalize("NFKD", decoded) \
-                         if not isinstance(decoded, bytes) \
-                         else decoded
-    value_normalized = normalize("NFKD", value) \
-                       if not isinstance(value, bytes) \
-                       else value
+    decoded_normalized = (normalize("NFKD", decoded)
+                          if not isinstance(decoded, bytes) else decoded)
+    value_normalized = (normalize("NFKD", value)
+                        if not isinstance(value, bytes) else value)
     if decoded_normalized == value_normalized:
         return True
-
     return False
 
 
@@ -578,8 +576,8 @@ def render_date(date):
     # Avoid %a and %b, which can change with locale, breaking compliance
     weekday = Definitions.weekday_abbr_list[date.weekday()]
     month = Definitions.month_abbr_list[date.month - 1]
-    return date.strftime("{day}, %d {month} %Y %H:%M:%S GMT")\
-            .format(day=weekday, month=month)
+    return date.strftime("{day}, %d {month} %Y %H:%M:%S GMT"
+                         ).format(day=weekday, month=month)
 
 
 def _parse_request(header_data, ignore_bad_cookies=False):
@@ -611,9 +609,8 @@ def _parse_request(header_data, ignore_bad_cookies=False):
     return cookies_dict
 
 
-def parse_one_response(line,
-        ignore_bad_cookies=False,
-        ignore_bad_attributes=True):
+def parse_one_response(line, ignore_bad_cookies=False,
+                       ignore_bad_attributes=True):
     """Turn one 'Set-Cookie:' line into a dict mapping attribute names to
     attribute values (raw strings).
     """
@@ -635,7 +632,7 @@ def parse_one_response(line,
         if unrecognized:
             if not ignore_bad_attributes:
                 raise InvalidCookieAttributeError(None, unrecognized,
-                    "unrecognized")
+                                                  "unrecognized")
             _report_unknown_attribute(unrecognized)
             continue
         # for unary flags
@@ -645,7 +642,7 @@ def parse_one_response(line,
         # ignore subcomponents of expires - they're still there to avoid doing
         # two passes
         timekeys = ('weekday', 'month', 'day', 'hour', 'minute', 'second',
-                'year')
+                    'year')
         if 'year' in captured:
             for key in timekeys:
                 del captured[key]
@@ -656,9 +653,8 @@ def parse_one_response(line,
     return cookie_dict
 
 
-def _parse_response(header_data,
-        ignore_bad_cookies=False,
-        ignore_bad_attributes=True):
+def _parse_response(header_data, ignore_bad_cookies=False,
+                    ignore_bad_attributes=True):
     """Turn one or more lines of 'Set-Cookie:' header data into a list of dicts
     mapping attribute names to attribute values (as plain strings).
     """
@@ -666,9 +662,9 @@ def _parse_response(header_data,
     for line in Definitions.EOL.split(header_data.strip()):
         if not line:
             break
-        cookie_dict = parse_one_response(line,
-                ignore_bad_cookies=ignore_bad_cookies,
-                ignore_bad_attributes=ignore_bad_attributes)
+        cookie_dict = parse_one_response(
+            line, ignore_bad_cookies=ignore_bad_cookies,
+            ignore_bad_attributes=ignore_bad_attributes)
         if not cookie_dict:
             continue
         cookie_dicts.append(cookie_dict)
@@ -708,7 +704,8 @@ class Cookie(object):
         for attr_name, attr_value in attrs.items():
             if not attr_name in self.attribute_names:
                 if not ignore_bad_attributes:
-                    raise InvalidCookieAttributeError(attr_name, attr_value,
+                    raise InvalidCookieAttributeError(
+                        attr_name, attr_value,
                         "unknown cookie attribute '%s'" % attr_name)
                 _report_unknown_attribute(attr_name)
 
@@ -743,13 +740,14 @@ class Cookie(object):
         parsed = {}
         for key, value in cookie_dict.items():
             # Don't want to pass name/value to _set_attributes
-            if key in ('name', 'value'): continue
+            if key in ('name', 'value'):
+                continue
             parser = cls.attribute_parsers.get(key)
             if not parser:
                 # Don't let totally unknown attributes pass silently
                 if not ignore_bad_attributes:
-                    raise InvalidCookieAttributeError(key, value,
-                        "unknown cookie attribute '%s'" % key)
+                    raise InvalidCookieAttributeError(
+                        key, value, "unknown cookie attribute '%s'" % key)
                 _report_unknown_attribute(key)
                 continue
             try:
@@ -769,15 +767,15 @@ class Cookie(object):
 
     @classmethod
     def from_string(cls, line, ignore_bad_cookies=False,
-            ignore_bad_attributes=True):
+                    ignore_bad_attributes=True):
         "Construct a Cookie object from a line of Set-Cookie header data."
-        cookie_dict = parse_one_response(line,
-                ignore_bad_cookies=ignore_bad_cookies,
-                ignore_bad_attributes=ignore_bad_attributes)
+        cookie_dict = parse_one_response(
+            line, ignore_bad_cookies=ignore_bad_cookies,
+            ignore_bad_attributes=ignore_bad_attributes)
         if not cookie_dict:
             return None
-        return cls.from_dict(cookie_dict,
-                ignore_bad_attributes=ignore_bad_attributes)
+        return cls.from_dict(
+            cookie_dict, ignore_bad_attributes=ignore_bad_attributes)
 
     def to_dict(self):
         this_dict = {'name': self.name, 'value': self.value}
@@ -808,9 +806,9 @@ class Cookie(object):
             # raise error so users of __setattr__ can learn.
             if value is not None:
                 if not self.validate(name, value):
-                    raise InvalidCookieAttributeError(name, value,
-                            "did not validate with " +
-                            repr(self.attribute_validators.get(name)))
+                    raise InvalidCookieAttributeError(
+                        name, value, "did not validate with " +
+                        repr(self.attribute_validators.get(name)))
         object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
@@ -870,9 +868,10 @@ class Cookie(object):
         if renderer:
             value = renderer(value)
         return '; '.join(
-            [''.join((name, '=', value))] +
+            ['{0}={1}'.format(name, value)] +
             [key if isinstance(value, bool) else '='.join((key, value))
-            for key, value in self.attributes().items()])
+             for key, value in self.attributes().items()]
+        )
 
     def __eq__(self, other):
         attrs = ['name', 'value'] + list(self.attribute_names.keys())
@@ -895,15 +894,15 @@ class Cookie(object):
     # Python, and it is mapped to the name you want in the output.
     # 'name' and 'value' should not be here.
     attribute_names = {
-            'expires':  'Expires',
-            'max_age':  'Max-Age',
-            'domain':   'Domain',
-            'path':     'Path',
-            'comment':  'Comment',
-            'version':  'Version',
-            'secure':   'Secure',
-            'httponly': 'HttpOnly',
-            }
+        'expires':  'Expires',
+        'max_age':  'Max-Age',
+        'domain':   'Domain',
+        'path':     'Path',
+        'comment':  'Comment',
+        'version':  'Version',
+        'secure':   'Secure',
+        'httponly': 'HttpOnly',
+    }
 
     # Register single-parameter functions in this dictionary to have them
     # used for encoding outgoing values (e.g. as RFC compliant strings,
@@ -912,31 +911,31 @@ class Cookie(object):
     # Usually it would be wise not to define a renderer for name, but it is
     # supported in case there is ever a real need.
     attribute_renderers = {
-            'value':    encode_cookie_value,
-            'expires':  render_date,
-            'max_age':  lambda item: str(item) if item else None,
-            'secure':   lambda item: True if item else False,
-            'httponly': lambda item: True if item else False,
-            'comment':  encode_extension_av,
-            'version':  lambda item: str(item) if isinstance(item, int)
-                                     else encode_extension_av(item),
-            }
+        'value':    encode_cookie_value,
+        'expires':  render_date,
+        'max_age':  lambda item: str(item) if item else None,
+        'secure':   lambda item: True if item else False,
+        'httponly': lambda item: True if item else False,
+        'comment':  encode_extension_av,
+        'version':  lambda item: (str(item) if isinstance(item, int)
+                                  else encode_extension_av(item)),
+    }
 
     # Register single-parameter functions in this dictionary to have them used
     # for decoding incoming values for use in the Python API (e.g. into nice
     # objects, numbers, unicode strings, etc.)
     # These are called by the property generated by cookie_attribute().
     attribute_parsers = {
-            'value':    parse_value,
-            'expires':  parse_date,
-            'domain':   parse_domain,
-            'path':     parse_path,
-            'max_age':  lambda item: long(strip_spaces_and_quotes(item)),
-            'comment':  parse_string,
-            'version':  lambda item: int(strip_spaces_and_quotes(item)),
-            'secure':   lambda item: True if item else False,
-            'httponly': lambda item: True if item else False,
-            }
+        'value':    parse_value,
+        'expires':  parse_date,
+        'domain':   parse_domain,
+        'path':     parse_path,
+        'max_age':  lambda item: long(strip_spaces_and_quotes(item)),
+        'comment':  parse_string,
+        'version':  lambda item: int(strip_spaces_and_quotes(item)),
+        'secure':   lambda item: True if item else False,
+        'httponly': lambda item: True if item else False,
+    }
 
     # Register single-parameter functions which return a true value for
     # acceptable values, and a false value for unacceptable ones. An
@@ -944,17 +943,17 @@ class Cookie(object):
     # set, and InvalidCookieAttribute is raised if validation fails (and the
     # validator doesn't raise a different exception prior)
     attribute_validators = {
-            'name':     valid_name,
-            'value':    valid_value,
-            'expires':  valid_date,
-            'domain':   valid_domain,
-            'path':     valid_path,
-            'max_age':  valid_max_age,
-            'comment':  valid_value,
-            'version':  lambda number: re.match("^\d+\Z", str(number)),
-            'secure':   lambda item: item is True or item is False,
-            'httponly': lambda item: item is True or item is False,
-            }
+        'name':     valid_name,
+        'value':    valid_value,
+        'expires':  valid_date,
+        'domain':   valid_domain,
+        'path':     valid_path,
+        'max_age':  valid_max_age,
+        'comment':  valid_value,
+        'version':  lambda number: re.match("^\d+\Z", str(number)),
+        'secure':   lambda item: item is True or item is False,
+        'httponly': lambda item: item is True or item is False,
+    }
 
 
 class Cookies(dict):
@@ -1021,8 +1020,8 @@ class Cookies(dict):
         parse_response instead. parse_request will happily turn 'expires=frob'
         into a separate cookie without complaining, according to the grammar.
         """
-        cookies_dict = _parse_request(header_data,
-                ignore_bad_cookies=ignore_bad_cookies)
+        cookies_dict = _parse_request(
+            header_data, ignore_bad_cookies=ignore_bad_cookies)
         cookie_objects = []
         for name, values in cookies_dict.items():
             for value in values:
@@ -1044,7 +1043,7 @@ class Cookies(dict):
         return self
 
     def parse_response(self, header_data, ignore_bad_cookies=False,
-            ignore_bad_attributes=True):
+                       ignore_bad_attributes=True):
         """Parse 'Set-Cookie' header data into Cookie objects, and add them to
         this Cookies object.
 
@@ -1076,9 +1075,10 @@ class Cookies(dict):
         determine which kind of parsing to do, you have to tell it manually by
         choosing correctly from parse_request between part_response.)
         """
-        cookie_dicts = _parse_response(header_data,
-                ignore_bad_cookies=ignore_bad_cookies,
-                ignore_bad_attributes=ignore_bad_attributes)
+        cookie_dicts = _parse_response(
+            header_data,
+            ignore_bad_cookies=ignore_bad_cookies,
+            ignore_bad_attributes=ignore_bad_attributes)
         cookie_objects = []
         for cookie_dict in cookie_dicts:
             cookie = Cookie.from_dict(cookie_dict)
@@ -1090,18 +1090,19 @@ class Cookies(dict):
     def from_request(cls, header_data, ignore_bad_cookies=False):
         "Construct a Cookies object from request header data."
         cookies = Cookies()
-        cookies.parse_request(header_data,
-                ignore_bad_cookies=ignore_bad_cookies)
+        cookies.parse_request(
+            header_data, ignore_bad_cookies=ignore_bad_cookies)
         return cookies
 
     @classmethod
     def from_response(cls, header_data, ignore_bad_cookies=False,
-        ignore_bad_attributes=True):
+                      ignore_bad_attributes=True):
         "Construct a Cookies object from response header data."
         cookies = Cookies()
-        cookies.parse_response(header_data,
-                ignore_bad_cookies=ignore_bad_cookies,
-                ignore_bad_attributes=ignore_bad_attributes)
+        cookies.parse_response(
+            header_data,
+            ignore_bad_cookies=ignore_bad_cookies,
+            ignore_bad_attributes=ignore_bad_attributes)
         return cookies
 
     def render_request(self, sort=True):
