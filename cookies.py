@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 import re
 import datetime
 import logging
@@ -913,7 +913,7 @@ class Cookie(object):
     attribute_renderers = {
         'value':    encode_cookie_value,
         'expires':  render_date,
-        'max_age':  lambda item: str(item) if item else None,
+        'max_age':  lambda item: str(item) if item is not None else None,
         'secure':   lambda item: True if item else False,
         'httponly': lambda item: True if item else False,
         'comment':  encode_extension_av,
