@@ -1,6 +1,6 @@
 """Parse, manipulate and render cookies in a convenient way.
 
-Copyright (c) 2011-2013, Sasha Hart.
+Copyright (c) 2011-2014, Sasha Hart.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -719,7 +719,7 @@ class Cookie(object):
 
     @classmethod
     def from_dict(cls, cookie_dict, ignore_bad_attributes=True):
-        """Construct a Cookie object from a dict of strings to parse.
+        """Construct an instance from a dict of strings to parse.
 
         The main difference between this and Cookie(name, value, **kwargs) is
         that the values in the argument to this method are parsed.
@@ -734,7 +734,7 @@ class Cookie(object):
         # Absence or failure of parser here is fatal; errors in present name
         # and value should be found by Cookie.__init__.
         value = cls.attribute_parsers['value'](raw_value)
-        cookie = Cookie(name, value)
+        cookie = cls(name, value)
 
         # Parse values from serialized formats into objects
         parsed = {}
@@ -869,8 +869,8 @@ class Cookie(object):
             value = renderer(value)
         return '; '.join(
             ['{0}={1}'.format(name, value)] +
-            [key if isinstance(value, bool) else '='.join((key, value))
-             for key, value in self.attributes().items()]
+            [key if isinstance(val, bool) else '='.join((key, val))
+             for key, val in self.attributes().items()]
         )
 
     def __eq__(self, other):
@@ -1036,7 +1036,7 @@ class Cookies(dict):
                     cookie_objects.append(cookie)
         try:
             self.add(*cookie_objects)
-        except (InvalidCookieError):
+        except InvalidCookieError:
             if not ignore_bad_cookies:
                 raise
             _report_invalid_cookie(header_data)
@@ -1089,7 +1089,7 @@ class Cookies(dict):
     @classmethod
     def from_request(cls, header_data, ignore_bad_cookies=False):
         "Construct a Cookies object from request header data."
-        cookies = Cookies()
+        cookies = cls()
         cookies.parse_request(
             header_data, ignore_bad_cookies=ignore_bad_cookies)
         return cookies
@@ -1098,7 +1098,7 @@ class Cookies(dict):
     def from_response(cls, header_data, ignore_bad_cookies=False,
                       ignore_bad_attributes=True):
         "Construct a Cookies object from response header data."
-        cookies = Cookies()
+        cookies = cls()
         cookies.parse_response(
             header_data,
             ignore_bad_cookies=ignore_bad_cookies,
@@ -1140,7 +1140,7 @@ class Cookies(dict):
                     return False
                 if not key in other:
                     return False
-                if not(self[key] == other[key]):
+                if self[key] != other[key]:
                     return False
         except (TypeError, KeyError):
             raise
