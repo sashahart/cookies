@@ -968,9 +968,13 @@ class Cookies(dict):
     stored in the dict, and render the set in formats suitable for HTTP request
     or response headers.
     """
+    DEFAULT_COOKIE_CLASS = Cookie
+
     def __init__(self, *args, **kwargs):
         dict.__init__(self)
         self.all_cookies = []
+        self.cookie_class = kwargs.get(
+            "_cookie_class", self.DEFAULT_COOKIE_CLASS)
         self.add(*args, **kwargs)
 
     def add(self, *args, **kwargs):
@@ -990,7 +994,7 @@ class Cookies(dict):
                 continue
             self[cookie.name] = cookie
         for key, value in kwargs.items():
-            cookie = Cookie(key, value)
+            cookie = self.cookie_class(key, value)
             self.all_cookies.append(cookie)
             if key in self:
                 continue
@@ -1028,7 +1032,7 @@ class Cookies(dict):
                 # Use from_dict to check name and parse value
                 cookie_dict = {'name': name, 'value': value}
                 try:
-                    cookie = Cookie.from_dict(cookie_dict)
+                    cookie = self.cookie_class.from_dict(cookie_dict)
                 except InvalidCookieError:
                     if not ignore_bad_cookies:
                         raise
@@ -1081,7 +1085,7 @@ class Cookies(dict):
             ignore_bad_attributes=ignore_bad_attributes)
         cookie_objects = []
         for cookie_dict in cookie_dicts:
-            cookie = Cookie.from_dict(cookie_dict)
+            cookie = self.cookie_class.from_dict(cookie_dict)
             cookie_objects.append(cookie)
         self.add(*cookie_objects)
         return self

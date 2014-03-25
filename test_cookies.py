@@ -1198,6 +1198,34 @@ class TestCookie(object):
                 ignore_bad_attributes=False)
 
 
+class Scone(object):
+    """Non-useful alternative to Cookie class for tests only.
+    """
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    @classmethod
+    def from_dict(cls, cookie_dict):
+        instance = cls(cookie_dict['name'], cookie_dict['value'])
+        return instance
+
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        if self.name != other.name:
+            return False
+        if self.value != other.value:
+            return False
+        return True
+
+
+class Scones(Cookies):
+    """Non-useful alternative to Cookies class for tests only.
+    """
+    DEFAULT_COOKIE_CLASS = Scone
+
+
 class TestCookies(object):
     """Tests for the Cookies class.
     """
@@ -1462,6 +1490,26 @@ class TestCookies(object):
         assert cookies['b'].value == 'x'
         values = [cookie.value for cookie in cookies.get_all('a')]
         assert values == ['b', 'c']
+
+    def test_custom_cookie_class_on_instance(self):
+        cookies = Cookies(_cookie_class=Scone)
+        cookies.add(a="b")
+        assert cookies['a'] == Scone("a", "b")
+
+    def test_custom_cookie_class_on_subclass(self):
+        cookies = Scones()
+        cookies.add(a="b")
+        assert cookies['a'] == Scone("a", "b")
+
+    def test_custom_cookie_class_on_instance_parse_request(self):
+        cookies = Scones()
+        cookies.parse_request("Cookie: c=d")
+        assert cookies['c'] == Scone("c", "d")
+
+    def test_custom_cookie_class_on_instance_parse_response(self):
+        cookies = Scones()
+        cookies.parse_response("Set-Cookie: c=d")
+        assert cookies['c'] == Scone("c", "d")
 
 
 def test_parse_date():
