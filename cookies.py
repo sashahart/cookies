@@ -158,7 +158,7 @@ class Definitions(object):
 
     # Max-Age attribute. These are digits, they are expressed this way
     # because that is how they are expressed in the RFC.
-    MAX_AGE_AV = "Max-Age=(?P<max_age>[\x31-\x39][\x30-\x39]*)"
+    MAX_AGE_AV = "Max-Age=(?P<max_age>[\x30-\x39]+)"
 
     # Domain attribute; a label is one part of the domain
     LABEL = '{let_dig}(?:(?:{let_dig_hyp}+)?{let_dig})?'.format(
