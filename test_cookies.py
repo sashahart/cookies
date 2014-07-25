@@ -862,8 +862,7 @@ class TestCookie(object):
             # invalid domain
             (("w", "m"), {'domain': ''}, InvalidCookieAttributeError),
             (("w", "m"), {'domain': '@'}, InvalidCookieAttributeError),
-            (("w", "m"), {'domain': '.foo.net'},
-                InvalidCookieAttributeError),
+            (("w", "m"), {'domain': '.foo.net'}, {'domain': '.foo.net'}),
             # control: valid domain
             (("w", "m"),
                 {'domain': 'foo.net'},
@@ -1866,20 +1865,20 @@ HEADER_CASES = [
             InvalidCookieError,
             Cookies(Cookie('lu', "Qg3OHJZLehYLjVgAqiZbZbzo",
                 expires=parse_date('Tue, 15 Jan 2013 21:47:38 GMT'),
-                path='/', domain='foo.com', httponly=True,
+                path='/', domain='.foo.com', httponly=True,
                 ))),
         ('ZQID=AYBEVnDKrdst; Domain=.nauk.com; Path=/; '
          'Expires=Wed, 13-Jan-2021 22:23:01 GMT; HttpOnly', {},
             InvalidCookieError,
             Cookies(Cookie('ZQID', "AYBEVnDKrdst",
-                httponly=True, domain='nauk.com', path='/',
+                httponly=True, domain='.nauk.com', path='/',
                 expires=parse_date('Wed, 13 Jan 2021 22:23:01 GMT'),
                 ))),
         ("OMID=Ap4PQQEq; Domain=.nauk.com; Path=/; "
             'Expires=Wed, 13-Jan-2021 22:23:01 GMT; Secure; HttpOnly', {},
             InvalidCookieError,
             Cookies(Cookie('OMID', "Ap4PQQEq",
-                path='/', domain='nauk.com', secure=True, httponly=True,
+                path='/', domain='.nauk.com', secure=True, httponly=True,
                 expires=parse_date('Wed, 13 Jan 2021 22:23:01 GMT')
                 ))),
         # question mark in value
@@ -2134,7 +2133,7 @@ test_parse_domain = _simple_test(parse_domain, {
     '  foo   ': 'foo',
     '"foo"': 'foo',
     '  "foo"  ': 'foo',
-    '.foo': 'foo',
+    '.foo': '.foo',
     })
 
 test_parse_path = _simple_test(parse_path, {
@@ -2340,7 +2339,7 @@ test_valid_domain = _simple_test(valid_domain,
         ' ': False,
         '.': False,
         '..': False,
-        '.foo': False,
+        '.foo': True,
         '"foo"': False,
         'foo': True,
     })

@@ -163,9 +163,9 @@ class Definitions(object):
     # Domain attribute; a label is one part of the domain
     LABEL = '{let_dig}(?:(?:{let_dig_hyp}+)?{let_dig})?'.format(
             let_dig="[A-Za-z0-9]", let_dig_hyp="[0-9A-Za-z\-]")
-    DOMAIN = "(?:{label}\.)*(?:{label})".format(label=LABEL)
+    DOMAIN = "\.?(?:{label}\.)*(?:{label})".format(label=LABEL)
     # Parse initial period though it's wrong, as RFC 6265 4.1.2.3
-    DOMAIN_AV = "Domain=(?P<domain>\.?{domain})".format(domain=DOMAIN)
+    DOMAIN_AV = "Domain=(?P<domain>{domain})".format(domain=DOMAIN)
 
     # Path attribute. We don't take special care with quotes because
     # they are hardly used, they don't allow invalid characters per RFC 6265,
@@ -403,9 +403,6 @@ def parse_domain(value):
     """Parse and validate an incoming Domain attribute value.
     """
     value = strip_spaces_and_quotes(value)
-    # Strip/ignore invalid leading period as in RFC 5.2.3
-    if value and value[0] == '.':
-        value = value[1:]
     if value:
         assert valid_domain(value)
     return value
@@ -495,8 +492,6 @@ def valid_domain(domain):
     # Using encoding on domain would confuse browsers into not sending cookies.
     # Generate UnicodeDecodeError up front if it can't store as ASCII.
     domain.encode('ascii')
-    if domain and domain[0] in '."':
-        return False
     # Domains starting with periods are not RFC-valid, but this is very common
     # in existing cookies, so they should still parse with DOMAIN_AV.
     if Definitions.DOMAIN_RE.match(domain):
