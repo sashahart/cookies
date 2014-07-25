@@ -1016,6 +1016,8 @@ class TestCookie(object):
                 ({'name': 'baz', 'value': 'bam', 'path': '/', 'secure': True,
                     'httponly': True},
                     "baz=bam; Path=/; Secure; HttpOnly"),
+                ({'name': 'baz', 'value': 'bam', 'domain': '.domain'},
+                    'baz=bam; Domain=domain'),
                 ]:
             cookie = Cookie(**data)
             actual = sorted(cookie.render_response().split("; "))

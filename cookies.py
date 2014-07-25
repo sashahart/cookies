@@ -575,6 +575,14 @@ def render_date(date):
                          ).format(day=weekday, month=month)
 
 
+def render_domain(domain):
+    if not domain:
+        return None
+    if domain[0] == '.':
+        return domain[1:]
+    return domain
+
+
 def _parse_request(header_data, ignore_bad_cookies=False):
     """Turn one or more lines of 'Cookie:' header data into a dict mapping
     cookie names to cookie values (raw strings).
@@ -907,6 +915,7 @@ class Cookie(object):
     # supported in case there is ever a real need.
     attribute_renderers = {
         'value':    encode_cookie_value,
+        'domain':   render_domain,
         'expires':  render_date,
         'max_age':  lambda item: str(item) if item is not None else None,
         'secure':   lambda item: True if item else False,
