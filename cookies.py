@@ -885,6 +885,11 @@ class Cookie(object):
                 mine = mine.decode('utf-8')
             if isinstance(his, bytes):
                 his = his.decode('utf-8')
+            if attr == 'domain':
+                if mine and mine[0] == '.':
+                    mine = mine[1:]
+                if his and his[0] == '.':
+                    his = his[1:]
             if mine != his:
                 return False
         return True
