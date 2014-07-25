@@ -418,8 +418,7 @@ class TestDefinitions(object):
         for c in "123456789":
             assert not match(c)
             assert match("Max-Age=%s" % c)
-        assert not match("Max-Age=0")
-        assert not match("Max-Age=029")
+        assert match("Max-Age=0")
         for c in RFC5234.CHAR:
             assert not match(c)
 
