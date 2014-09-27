@@ -1,4 +1,4 @@
-from distutils.core import setup, Command
+from setuptools import setup, Command
 from cookies import __version__
 
 class Test(Command):
