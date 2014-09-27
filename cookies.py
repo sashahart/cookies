@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 import re
 import datetime
 import logging
@@ -698,8 +698,14 @@ class Cookie(object):
         try:
             self.name = name
         except InvalidCookieAttributeError:
-            raise InvalidCookieError(message="invalid name for new Cookie")
-        self.value = value or ''
+            raise InvalidCookieError(message="invalid name for new Cookie",
+                                     data=name)
+        value = value or ''
+        try:
+            self.value = value
+        except InvalidCookieAttributeError:
+            raise InvalidCookieError(message="invalid value for new Cookie",
+                                     data=value)
         if kwargs:
             self._set_attributes(kwargs, ignore_bad_attributes=False)
 
