@@ -43,9 +43,9 @@ def _total_seconds(td):
         return td.total_seconds()
     return td.days * 3600 * 24 + td.seconds + td.microseconds / 100000.0
 
-# see test_encoding_assumptions for how these magical safe= parms were figured
-# out. the differences are because of what cookie-octet may contain
-# vs the more liberal spec for extension-av
+# see TestEncodingAssumptions for how these magical safe= parms were
+# figured out. The differences between the two are because of what
+# cookie-octet may contain vs the more liberal spec for extension-av.
 _cookie_safe = '!#$&\'()*+/:<=>?@[]^`{|}~'
 _ext_safe = ' !"#$&\'()*+,/:<=>?@[\\]^`{|}~'
 default_cookie_quote = lambda item: _default_quote(item, safe=_cookie_safe)
