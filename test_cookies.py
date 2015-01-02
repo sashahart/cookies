@@ -2187,78 +2187,101 @@ def test_render_date():
             assert render_date(dt) == expected
 
 
-def test_encoding_assumptions(check_unicode=False):
-    "Document and test assumptions underlying URL encoding scheme"
-    # Use the RFC 6265 based character class to build a regexp matcher that
-    # will tell us whether or not a character is okay to put in cookie values.
+class TestEncodingAssumptions(object):
+    """
+    Document and test assumptions underlying URL encoding scheme.
+
+    The real point here is to show that the apparently magical value
+    for safe= parameter passed to quote() in the supplied default encoding
+    implementation includes all and only the necessary characters so that:
+        (A) forbidden characters will always be encoded
+            so that no out-of-range characters can occur
+        (B) permitted characters will not be encoded unnecessarily
+        (C) strings will round-trip properly
+    """
+
+    # Convert RFC 6265 definitions to regex objects which will tell us
+    # whether or not any given character is okay to put in cookie values
+    # or extension-av values. These are the base used to make safe=
+    # parameter for quote(), and also to redundantly check their
+    # correctness.
     cookie_value_re = re.compile("[%s]" % Definitions.COOKIE_OCTET)
-    # Figure out which characters are okay. (unichr doesn't exist in Python 3,
-    # in Python 2 it shouldn't be an issue)
-    cookie_value_safe1 = set(chr(i) for i in range(0, 256) \
-                            if cookie_value_re.match(chr(i)))
-    cookie_value_safe2 = set(unichr(i) for i in range(0, 256) \
-                            if cookie_value_re.match(unichr(i)))
-    # These two are NOT the same on Python3
-    assert cookie_value_safe1 == cookie_value_safe2
-    # Now which of these are quoted by urllib.quote?
-    # caveat: Python 2.6 crashes if chr(127) is passed to quote and safe="",
-    # so explicitly set it to b"" to avoid the issue
-    safe_but_quoted = set(c for c in cookie_value_safe1
-                          if quote(c, safe=b"") != c)
-    # Produce a set of characters to give to urllib.quote for the safe parm.
-    dont_quote = "".join(sorted(safe_but_quoted))
-    # Make sure it works (and that it works because of what we passed)
-    for c in dont_quote:
-        assert quote(c, safe="") != c
-        assert quote(c, safe=dont_quote) == c
-
-    # Make sure that the result of using dont_quote as the safe characters for
-    # urllib.quote produces stuff which is safe as a cookie value, but not
-    # different unless it has to be.
-    for i in range(0, 255):
-        original = chr(i)
-        quoted = quote(original, safe=dont_quote)
-        # If it is a valid value for a cookie, that quoting should leave it
-        # alone.
-        if cookie_value_re.match(original):
-            assert original == quoted
-        # If it isn't a valid value, then the quoted value should be valid.
-        else:
-            assert cookie_value_re.match(quoted)
-
-    assert set(dont_quote) == set("!#$%&'()*+/:<=>?@[]^`{|}~")
-
-    # From 128 on urllib.quote will not work on a unichr() return value.
-    # We'll want to encode utf-8 values into ASCII, then do the quoting.
-    # Verify that this is reversible.
-    if check_unicode:
-        for c in (unichr(i) for i in range(0, 1114112)):
-            asc = c.encode('utf-8')
-            quoted = quote(asc, safe=dont_quote)
-            unquoted = unquote(asc)
-            unicoded = unquoted.decode('utf-8')
-            assert unicoded == c
-
-    # Now do the same for extension-av.
     extension_av_re = re.compile("[%s]" % Definitions.EXTENSION_AV)
-    extension_av_safe = set(chr(i) for i in range(0, 256) \
-                            if extension_av_re.match(chr(i)))
-    safe_but_quoted = set(c for c in extension_av_safe \
-                          if quote(c, safe="") != c)
-    dont_quote = "".join(sorted(safe_but_quoted))
-    for c in dont_quote:
-        assert quote(c, safe="") != c
-        assert quote(c, safe=dont_quote) == c
 
-    for i in range(0, 255):
-        original = chr(i)
-        quoted = quote(original, safe=dont_quote)
-        if extension_av_re.match(original):
-            assert original == quoted
-        else:
-            assert extension_av_re.match(quoted)
+    def make_dont_quote(self, regex):
+        """Derive a 'safe=' parameter for 'quote()' using given regex.
 
-    assert set(dont_quote) == set(' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
+        The passed regex defines the set of characters permitted to occur.
+        For example, it might be a definition of characters that are permitted
+        to occur as part of a cookie value (per Cookie-Octet definition),
+        or a definition of characters permitted in an Extension-Av.
+
+        The returned value is a string containing only those characters
+        which are allowed to occur, and which would otherwise be quoted
+        by quote(c, safe="").
+
+        Using the value returned by this function as the safe= parameter
+        to quote() gives you a quoting function which simply passes through
+        characters that are permitted according to your regex.
+        In other words, it only escapes characters that are not allowed by your
+        regex, so that the result is an encoded string honoring the regex's
+        constraint.
+
+        Note that % is a special character to quote(), and therefore should
+        not be included in the safe= parameter if values are expected to
+        make a round trip; so it's always removed if it was present to begin
+        with, even if % is not forbidden by the regex.
+        """
+        all_bytes = [chr(i) for i in range(0, 256)]
+        # Figure out which characters are okay.
+        safe = set(c for c in all_bytes if regex.match(c))
+        # Now which of these are quoted by urllib.quote?
+        # caveat: Python 2.6 crashes if chr(127) is passed to quote and safe="",
+        # so explicitly set it to b"" to avoid the issue
+        safe_but_quoted = set(c for c in safe if quote(c, safe=b"") != c)
+        # Produce a set of characters to give to urllib.quote for the safe parm.
+        dont_quote = "".join(sorted(safe_but_quoted))
+        # Remove % since it is special to quote and we need an encoding
+        # scheme which can round-trip successfully.
+        # dont_quote = dont_quote.replace(chr(37), "")
+        dont_quote = dont_quote.replace("%", "")
+        return dont_quote
+
+    def _dont_quote_is_minimal(self, dont_quote):
+        """
+        Ensure every character in dont_quote would normally be quoted,
+        but that quoting it is suppressed with the given dont_quote value.
+        """
+        for c in dont_quote:
+            assert quote(c, safe="") != c
+            assert quote(c, safe=dont_quote) == c
+
+    def _dont_quote_is_correct(self, dont_quote, regex):
+        characters = [chr(i) for i in range(0, 256)]
+        for char in characters:
+            quoted = quote(char, safe=dont_quote)
+            # Allowed characters must be left intact,
+            # UNLESS they are %
+            if char != chr(37) and regex.match(char):
+                assert quoted == char
+            # Forbidden characters must be encoded as some other string,
+            # all of the characters in which must be allowed
+            else:
+                assert quoted != char
+                assert regex.match(quoted)
+
+    def _test_dont_quote(self, regex):
+        dont_quote = self.make_dont_quote(regex)
+        self._dont_quote_is_minimal(dont_quote)
+        self._dont_quote_is_correct(dont_quote, regex)
+
+    def test_cookie_dont_quote(self):
+        regex = self.cookie_value_re
+        self._test_dont_quote(regex)
+
+    def test_extension_av_dont_quote(self):
+        regex = self.extension_av_re
+        self._test_dont_quote(regex)
 
 
 test_encode_cookie_value = _simple_test(encode_cookie_value,
