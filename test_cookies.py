@@ -1970,6 +1970,7 @@ def _cheap_request_parse(arg1, arg2):
         pieces = [piece for piece in pieces if piece and '=' in piece]
         pieces = [tuple(piece.split("=", 1)) for piece in pieces]
         pieces = [(name.strip(), value.strip('" ')) for name, value in pieces]
+        pieces = [(unquote(name), unquote(value)) for name, value in pieces]
         # Keep the first one in front (can use set down the line);
         # the rest are sorted
         if len(pieces) > 1:
