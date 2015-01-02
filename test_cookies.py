@@ -2327,6 +2327,12 @@ test_valid_value = _simple_test(valid_value,
 #       b'': True,
 #       b'ABCDEFGHIJKLMNOPQRSTUVWXYZ': True,
         'Pedro Almodóvar'.encode('utf-8'): False,
+        '%': True,
+        ';': True,
+        '%25': True,
+        '%65': True,
+        '%2565': True,
+        '%2565;': True,
     })
 
 test_valid_date = _simple_test(valid_date,
