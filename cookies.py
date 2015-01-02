@@ -46,12 +46,10 @@ def _total_seconds(td):
 # see test_encoding_assumptions for how these magical safe= parms were figured
 # out. the differences are because of what cookie-octet may contain
 # vs the more liberal spec for extension-av
-default_cookie_quote = lambda item: _default_quote(
-    item, safe='!#$%&\'()*+/:<=>?@[]^`{|}~')
-
-default_extension_quote = lambda item: _default_quote(
-    item, safe=' !"#$%&\'()*+,/:<=>?@[\\]^`{|}~')
-
+_cookie_safe = '!#$&\'()*+/:<=>?@[]^`{|}~'
+_ext_safe = ' !"#$&\'()*+,/:<=>?@[\\]^`{|}~'
+default_cookie_quote = lambda item: _default_quote(item, safe=_cookie_safe)
+default_extension_quote = lambda item: _default_quote(item, safe=_ext_safe)
 default_unquote = _default_unquote
 
 
