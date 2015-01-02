@@ -25,6 +25,7 @@ from cookies import (
         encode_cookie_value, encode_extension_av,
         valid_value, valid_date, valid_domain, valid_path,
         strip_spaces_and_quotes, _total_seconds,
+        _cookie_safe, _ext_safe,
         )
 
 
@@ -2278,10 +2279,16 @@ class TestEncodingAssumptions(object):
     def test_cookie_dont_quote(self):
         regex = self.cookie_value_re
         self._test_dont_quote(regex)
+        # Show that the generated value is equivalent to the value used
+        dont_quote = self.make_dont_quote(regex)
+        assert set(dont_quote) == set(_cookie_safe)
 
     def test_extension_av_dont_quote(self):
         regex = self.extension_av_re
         self._test_dont_quote(regex)
+        # Show that the generated value is equivalent to the value used
+        dont_quote = self.make_dont_quote(regex)
+        assert set(dont_quote) == set(_ext_safe)
 
 
 test_encode_cookie_value = _simple_test(encode_cookie_value,
